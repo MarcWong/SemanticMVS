@@ -2,9 +2,11 @@
 from scipy import spatial
 import numpy as np
 
+batch = 50
+
 # 从ply读点云
 def readPointCloud(ii):
-    file1 = open('scene_dense.ply')
+    file1 = open('model_dense.ply')
 
     for _ in range(13):
         line = file1.readline()
@@ -18,7 +20,7 @@ def readPointCloud(ii):
 
     line = file1.readline()
     while line:
-        if (ct % 100 == ii):
+        if (ct % batch == ii):
             dt = line.split()
 
             # run sparse
@@ -51,6 +53,8 @@ def readTxt(ii):
     p = []
     ct = 0
 
+    u=0
+    v=0
     line = file2.readline()
     while line:
         dt = line.split()
@@ -58,7 +62,7 @@ def readTxt(ii):
         if (dt[0] == 'v'):
             ct += 1
             # add this point to KDtree
-            if (ct % 100 == ii):
+            if (ct % batch == ii):
                 x.append(float(dt[1]))
                 y.append(float(dt[2]))
                 z.append(float(dt[3]))
@@ -72,8 +76,16 @@ def readTxt(ii):
                 for _ in range(nImage):
                     line = file2.readline()
                     imageInfo = line.split()
-                    # print('id:', int(imageInfo[0]))
-                    [prob0, prob1, prob2] = prediction[int(imageInfo[0])][int(float(imageInfo[1]))][int(float(imageInfo[1]))]
+                    # max: 2000
+                    if (u < int(float(imageInfo[1]))):
+                        u = int(float(imageInfo[1]))
+                    # max: 1500
+                    if (v < int(float(imageInfo[2]))):
+                        v = int(float(imageInfo[2]))
+                    # print(prediction[int(imageInfo[0])].shape)
+                    # print('u:', int(float(imageInfo[1])))
+                    # print('v:', int(float(imageInfo[2])))
+                    [prob0, prob1, prob2] = prediction[int(imageInfo[0])][2 * int(float(imageInfo[2]))][2 * int(float(imageInfo[1]))]
                     # print('probability:', [prob0, prob1, prob2])
                     p0 += prob0
                     p1 += prob1
@@ -84,7 +96,8 @@ def readTxt(ii):
                 p.append([p0, p1, p2])
 
         line = file2.readline()
-
+    print('u:', u)
+    print('v:', v)
     file2.close()
     return [x, y, z, p]
 
@@ -103,7 +116,7 @@ for a in range(10):
     prediction[a] = np.load("/data1/Dataset/knn/prediction/"+str(a)+".npy")
 
 # 主函数，通过循环分批读取稠密点云，避免内存爆炸
-for ii in range(100):
+for ii in range(batch):
     print("iter: ", ii, "start")
 
     # read point cloud
