@@ -3,7 +3,11 @@ from scipy import spatial
 import numpy as np
 
 # 从ply读点云
-def readPointCloud(file):
+def readPointCloud(ii):
+    file1 = open('scene_dense.ply')
+
+    for _ in range(13):
+        line = file1.readline()
     x = []
     y = []
     z = []
@@ -12,7 +16,7 @@ def readPointCloud(file):
     b = []
     ct = 0
 
-    line = file.readline()
+    line = file1.readline()
     while line:
         if (ct % 100 == ii):
             dt = line.split()
@@ -33,54 +37,110 @@ def readPointCloud(file):
             g.append(int(dt[4]))
             b.append(int(dt[5]))
 
-        line = file.readline()
-        ct = ct + 1
+        line = file1.readline()
+        ct += 1
+    file1.close()
     return [x, y, z, r, g, b]
+
+# 从txt读二三维匹配点信息
+def readTxt(ii):
+    file2 = open('/data1/Dataset/knn/output.txt')
+    x = []
+    y = []
+    z = []
+    p = []
+    ct = 0
+
+    line = file2.readline()
+    while line:
+        dt = line.split()
+        # 3D point
+        if (dt[0] == 'v'):
+            ct += 1
+            # add this point to KDtree
+            if (ct % 100 == ii):
+                x.append(float(dt[1]))
+                y.append(float(dt[2]))
+                z.append(float(dt[3]))
+
+                line = file2.readline()
+                nImage = int(line.split()[0])
+
+                p0 = 0
+                p1 = 0
+                p2 = 0
+                for _ in range(nImage):
+                    line = file2.readline()
+                    imageInfo = line.split()
+                    # print('id:', int(imageInfo[0]))
+                    [prob0, prob1, prob2] = prediction[int(imageInfo[0])][int(float(imageInfo[1]))][int(float(imageInfo[1]))]
+                    # print('probability:', [prob0, prob1, prob2])
+                    p0 += prob0
+                    p1 += prob1
+                    p2 += prob2
+                p0 /= nImage
+                p1 /= nImage
+                p2 /= nImage
+                p.append([p0, p1, p2])
+
+        line = file2.readline()
+
+    file2.close()
+    return [x, y, z, p]
 
 # 写点云到obj
 def writePointCloud(x, y, z, r_new, g_new, b_new):
-    file2 = open('scene_dense2.obj', 'a')
+    file3 = open('scene_dense2.obj', 'a')
 
     for i in range(point.shape[0]):
-        file2.write(
+        file3.write(
             'v ' + str(x[i]) + ' ' + str(y[i]) + ' ' + str(z[i]) + ' ' + str(r_new[i]) + ' ' + str(g_new[i]) + ' ' + str(b_new[i]) + '\n')
-    file2.close()
+    file3.close()
 
-# 主函数，通过循环避免内存爆炸
-for ii in range(1): # 100
-    file = open('scene_dense.ply')
 
-    for i in range(13):
-        line = file.readline()
+prediction = [0]*10
+for a in range(10):
+    prediction[a] = np.load("/data1/Dataset/knn/prediction/"+str(a)+".npy")
+
+# 主函数，通过循环分批读取稠密点云，避免内存爆炸
+for ii in range(100):
+    print("iter: ", ii, "start")
 
     # read point cloud
-    [x,y,z,r,g,b] = readPointCloud(file)
-    print('iter: ', ii, 'read finished')
+    # [x,y,z,r,g,b] = readPointCloud(ii)
 
-    point = np.array([x, y, z]).transpose()
+    # read probability from 2-3D relation Txt
+    [x2,y2,z2, p] = readTxt(ii)
+
+    point = np.array([x2, y2, z2]).transpose()
     print(point.shape[0])
 
     tree = spatial.KDTree(point)
     print('build tree finished')
 
     # knn start
+
     r_new = []
     g_new = []
     b_new = []
-    
+
     k = int(point.shape[0] / 1000)
-    
+
     for i in range(point.shape[0]):
         d, index = tree.query(point[i], k=10)
-        rr = r[i]
-        gg = g[i]
-        bb = b[i]
+        rr = p[i][2]
+        gg = p[i][1]
+        bb = p[i][0]
         flag = 0
         for j in index:
             # print(j)
-            rr = rr + r[j]
-            gg = gg + g[j]
-            bb = bb + b[j]
+            rr += p[j][2]
+            gg += p[j][1]
+            bb += p[j][0]
+
+        # print('rr:', rr)
+        # print('gg:', gg)
+        # print('bb:', bb)
     
         if (rr > gg) and (rr > bb):
             r_new.append(255)
@@ -98,11 +158,20 @@ for ii in range(1): # 100
             b_new.append(255)
             flag = 1
         if (flag == 0):
-            r_new.append(r[i])
-            g_new.append(g[i])
-            b_new.append(b[i])
+            if (p[i][2] > p[i][1] and p[i][2] > p[i][0]):
+                r_new.append(255)
+                g_new.append(0)
+                b_new.append(0)
+            if (p[i][1] > p[i][2] and p[i][1] > p[i][0]):
+                r_new.append(0)
+                g_new.append(255)
+                b_new.append(0)
+            if (p[i][0] > p[i][2] and p[i][0] > p[i][1]):
+                r_new.append(0)
+                g_new.append(0)
+                b_new.append(255)
             flag = 1
     print('knn finished')
 
-    writePointCloud(x, y, z, r_new, g_new, b_new)
+    writePointCloud(x2, y2, z2, r_new, g_new, b_new)
     print('write finished')
