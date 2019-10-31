@@ -2,20 +2,26 @@
 from scipy import spatial
 import numpy as np
 
-batch = 50
+# 0: baseline
+# 1: simple knn
+# 2: argmax knn
+TYPE=2
 
-# 从ply读点云
+fx=[5,4,3,1,8,2,9,7,0,6]
+batch = 50
+POINT_N = 0
+
+# 从ply读点云，暂时废弃
 def readPointCloud(ii):
-    file1 = open('model_dense.ply')
+    file1 = open('sparse_dense.ply')
 
     for _ in range(13):
         line = file1.readline()
     x = []
     y = []
     z = []
-    r = []
-    g = []
-    b = []
+    p = []
+
     ct = 0
 
     line = file1.readline()
@@ -32,20 +38,20 @@ def readPointCloud(ii):
             # b.append(int(dt[6]))
 
             # run dense
+            
+            print('x:', dt[0])
             x.append(float(dt[0]))
             y.append(float(dt[1]))
             z.append(float(dt[2]))
-            r.append(int(dt[3]))
-            g.append(int(dt[4]))
-            b.append(int(dt[5]))
+            p.append([int(dt[3]) / 255., int(dt[4]) / 255., int(dt[5]) / 255.])
 
         line = file1.readline()
         ct += 1
     file1.close()
-    return [x, y, z, r, g, b]
+    return [x, y, z, p]
 
-# 从txt读二三维匹配点信息
-def readTxt(ii):
+# 从txt读二三维匹配点信息，投票
+def readTxt(ii, softmax):
     file2 = open('/data1/Dataset/knn/output.txt')
     x = []
     y = []
@@ -70,9 +76,9 @@ def readTxt(ii):
                 line = file2.readline()
                 nImage = int(line.split()[0])
 
-                p0 = 0
-                p1 = 0
-                p2 = 0
+                p0 = 0.0
+                p1 = 0.0
+                p2 = 0.0
                 for _ in range(nImage):
                     line = file2.readline()
                     imageInfo = line.split()
@@ -85,16 +91,28 @@ def readTxt(ii):
                     # print(prediction[int(imageInfo[0])].shape)
                     # print('u:', int(float(imageInfo[1])))
                     # print('v:', int(float(imageInfo[2])))
-                    [prob0, prob1, prob2] = prediction[int(imageInfo[0])][2 * int(float(imageInfo[2]))][2 * int(float(imageInfo[1]))]
+                    [prob0, prob1, prob2] = prediction[fx[int(imageInfo[0])]][2 * int(float(imageInfo[2]))][2 * int(float(imageInfo[1]))]
                     # print('probability:', [prob0, prob1, prob2])
-                    p0 += prob0
-                    p1 += prob1
-                    p2 += prob2
+
+                    # 对于简单方法，直接取argmax
+                    if ~softmax:
+                        if (prob0 >= prob1 and prob0 >= prob2):
+                            p0 += 1
+                        elif (prob1 >= prob0 and prob1 >= prob2):
+                            p1 += 1
+                        elif (prob2 >= prob0 and prob2 >= prob1):
+                            p2 += 1
+                    # 对于softmax方法，累加其概率
+                    else:
+                        p0 += prob0
+                        p1 += prob1
+                        p2 += prob2
+
                 p0 /= nImage
                 p1 /= nImage
                 p2 /= nImage
                 p.append([p0, p1, p2])
-
+                
         line = file2.readline()
     print('u:', u)
     print('v:', v)
@@ -102,10 +120,16 @@ def readTxt(ii):
     return [x, y, z, p]
 
 # 写点云到obj
-def writePointCloud(x, y, z, r_new, g_new, b_new):
-    file3 = open('scene_dense2.obj', 'a')
+def writePointCloud(x, y, z, r_new, g_new, b_new, path):
+    # print('x:', len(x))
+    # print('y:', len(y))
+    # print('z:', len(z))
+    # print('r_new:', len(r_new))
+    # print('g_new:', len(g_new))
+    # print('b_new:', len(b_new))
+    file3 = open(path, 'a')
 
-    for i in range(point.shape[0]):
+    for i in range(POINT_N):
         file3.write(
             'v ' + str(x[i]) + ' ' + str(y[i]) + ' ' + str(z[i]) + ' ' + str(r_new[i]) + ' ' + str(g_new[i]) + ' ' + str(b_new[i]) + '\n')
     file3.close()
@@ -115,18 +139,20 @@ prediction = [0]*10
 for a in range(10):
     prediction[a] = np.load("/data1/Dataset/knn/prediction/"+str(a)+".npy")
 
+
 # 主函数，通过循环分批读取稠密点云，避免内存爆炸
 for ii in range(batch):
     print("iter: ", ii, "start")
 
-    # read point cloud
-    # [x,y,z,r,g,b] = readPointCloud(ii)
+    # read probability and 2-3D relation
+    if TYPE < 2:
+        [x, y, z, p] = readTxt(ii, False)
+    else:
+        [x, y, z, p] = readTxt(ii, True)
 
-    # read probability from 2-3D relation Txt
-    [x2,y2,z2, p] = readTxt(ii)
-
-    point = np.array([x2, y2, z2]).transpose()
-    print(point.shape[0])
+    point = np.array([x, y, z]).transpose()
+    POINT_N = point.shape[0]
+    print(POINT_N)
 
     tree = spatial.KDTree(point)
     print('build tree finished')
@@ -137,24 +163,26 @@ for ii in range(batch):
     g_new = []
     b_new = []
 
-    k = int(point.shape[0] / 1000)
+    k = int(POINT_N / 1000)
 
-    for i in range(point.shape[0]):
+    for i in range(POINT_N):
         d, index = tree.query(point[i], k=10)
-        rr = p[i][2]
-        gg = p[i][1]
-        bb = p[i][0]
+
+        gg = p[i][0]
+        rr = p[i][1]
+        bb = p[i][2]
+        
         flag = 0
-        for j in index:
-            # print(j)
-            rr += p[j][2]
-            gg += p[j][1]
-            bb += p[j][0]
+        if TYPE > 0:
+            for j in index:
+                rr += p[j][1]
+                gg += p[j][0]
+                bb += p[j][2]
 
         # print('rr:', rr)
         # print('gg:', gg)
         # print('bb:', bb)
-    
+
         if (rr > gg) and (rr > bb):
             r_new.append(255)
             g_new.append(0)
@@ -171,20 +199,29 @@ for ii in range(batch):
             b_new.append(255)
             flag = 1
         if (flag == 0):
-            if (p[i][2] > p[i][1] and p[i][2] > p[i][0]):
-                r_new.append(255)
-                g_new.append(0)
-                b_new.append(0)
-            if (p[i][1] > p[i][2] and p[i][1] > p[i][0]):
+            if (p[i][0] >= p[i][2] and p[i][0] >= p[i][1]):
                 r_new.append(0)
                 g_new.append(255)
                 b_new.append(0)
-            if (p[i][0] > p[i][2] and p[i][0] > p[i][1]):
+            elif (p[i][1] >= p[i][2] and p[i][1] >= p[i][0]):
+                r_new.append(255)
+                g_new.append(0)
+                b_new.append(0)
+            elif (p[i][2] >= p[i][1] and p[i][2] >= p[i][0]):
                 r_new.append(0)
                 g_new.append(0)
+                b_new.append(255)
+            else:
+                r_new.append(255)
+                g_new.append(255)
                 b_new.append(255)
             flag = 1
     print('knn finished')
 
-    writePointCloud(x2, y2, z2, r_new, g_new, b_new)
+    if TYPE == 0:
+        writePointCloud(x, y, z, r_new, g_new, b_new, '/data1/Dataset/knn/semantic/scene_dense_baseline.obj')
+    elif TYPE == 1:
+        writePointCloud(x, y, z, r_new, g_new, b_new, '/data1/Dataset/knn/semantic/scene_dense_simple.obj')
+    else:
+        writePointCloud(x, y, z, r_new, g_new, b_new, '/data1/Dataset/knn/semantic/scene_dense_softmax.obj')
     print('write finished')
