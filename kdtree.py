@@ -7,9 +7,20 @@ import numpy as np
 # 2: argmax knn
 TYPE=2
 
-fx=[5,4,3,1,8,2,9,7,0,6]
-batch = 50
+# path="/data1/Dataset/knn/"
+path="/data1/Dataset/pku/library/"
+# fx=[5,4,3,1,8,2,9,7,0,6]
+fx=[35, 34, 33, 32, 31, 30, 29, 28, 27, 26,
+25, 24, 23, 22, 21, 20, 19 ,18, 17, 16 ,
+5, 3, 4, 2, 0, 1, 46, 9, 47, 10,
+48, 11, 49, 12, 50, 13, 51, 14, 52, 15,
+53, 54, 55, 60, 61, 59, 58, 57, 56, 45,
+8, 44, 7, 43, 6, 42, 41, 40, 39, 38, 37, 36]
+batch = 100
 POINT_N = 0
+WIDTH = 4384
+HEIGHT = 2464
+resolution = 2
 
 # 从ply读点云，暂时废弃
 def readPointCloud(ii):
@@ -52,7 +63,7 @@ def readPointCloud(ii):
 
 # 从txt读二三维匹配点信息，投票
 def readTxt(ii, softmax):
-    file2 = open('/data1/Dataset/knn/output.txt')
+    file2 = open(path + "output.txt")
     x = []
     y = []
     z = []
@@ -82,16 +93,22 @@ def readTxt(ii, softmax):
                 for _ in range(nImage):
                     line = file2.readline()
                     imageInfo = line.split()
-                    # max: 2000
+                    # max: 图片长度的1/2
                     if (u < int(float(imageInfo[1]))):
                         u = int(float(imageInfo[1]))
-                    # max: 1500
+                    # max: 图片宽度的1500
                     if (v < int(float(imageInfo[2]))):
                         v = int(float(imageInfo[2]))
-                    # print(prediction[int(imageInfo[0])].shape)
-                    # print('u:', int(float(imageInfo[1])))
-                    # print('v:', int(float(imageInfo[2])))
-                    [prob0, prob1, prob2] = prediction[fx[int(imageInfo[0])]][2 * int(float(imageInfo[2]))][2 * int(float(imageInfo[1]))]
+
+                    w = 2 * int(resolution * float(imageInfo[1]))
+                    h = 2 * int(resolution * float(imageInfo[2]))
+                    # 引用越界
+                    if (w >= WIDTH) or (h >= HEIGHT):                       
+                        # print('fx:', fx[int(imageInfo[0])])
+                        # print('u:', int(float(imageInfo[1])))
+                        # print('v:', int(float(imageInfo[2])))
+                        continue
+                    [prob0, prob1, prob2] = prediction[fx[int(imageInfo[0])]][h][w]
                     # print('probability:', [prob0, prob1, prob2])
 
                     # 对于简单方法，直接取argmax
@@ -135,9 +152,14 @@ def writePointCloud(x, y, z, r_new, g_new, b_new, path):
     file3.close()
 
 
-prediction = [0]*10
-for a in range(10):
-    prediction[a] = np.load("/data1/Dataset/knn/prediction/"+str(a)+".npy")
+# prediction = [0]*10
+# for a in range(10):
+#     prediction[a] = np.load(path + "prediction/" + str(a) + ".npy")
+
+prediction = [0]*62
+for a in range(62):
+    prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
+    # print(prediction[a].shape)
 
 
 # 主函数，通过循环分批读取稠密点云，避免内存爆炸
@@ -219,9 +241,9 @@ for ii in range(batch):
     print('knn finished')
 
     if TYPE == 0:
-        writePointCloud(x, y, z, r_new, g_new, b_new, '/data1/Dataset/knn/semantic/scene_dense_baseline.obj')
+        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_baseline.obj")
     elif TYPE == 1:
-        writePointCloud(x, y, z, r_new, g_new, b_new, '/data1/Dataset/knn/semantic/scene_dense_simple.obj')
+        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_simple.obj")
     else:
-        writePointCloud(x, y, z, r_new, g_new, b_new, '/data1/Dataset/knn/semantic/scene_dense_softmax.obj')
+        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_softmax.obj")
     print('write finished')
