@@ -5,22 +5,35 @@ import numpy as np
 # 0: baseline
 # 1: simple knn
 # 2: argmax knn
-TYPE=2
+TYPE = 1
 
-# path="/data1/Dataset/knn/"
-path="/data1/Dataset/pku/library/"
-# fx=[5,4,3,1,8,2,9,7,0,6]
-fx=[35, 34, 33, 32, 31, 30, 29, 28, 27, 26,
-25, 24, 23, 22, 21, 20, 19 ,18, 17, 16 ,
-5, 3, 4, 2, 0, 1, 46, 9, 47, 10,
-48, 11, 49, 12, 50, 13, 51, 14, 52, 15,
-53, 54, 55, 60, 61, 59, 58, 57, 56, 45,
-8, 44, 7, 43, 6, 42, 41, 40, 39, 38, 37, 36]
-batch = 100
+# nearest neighbor
+K = 10
+
+batch = 50
 POINT_N = 0
-WIDTH = 4384
-HEIGHT = 2464
-resolution = 2
+resolution = 1
+
+path="/data1/Dataset/knn/"
+fx=[5,4,3,1,8,2,9,7,0,6]
+WIDTH = 4000
+HEIGHT = 3000
+prediction = [0]*10
+for a in range(10):
+    prediction[a] = np.load(path + "prediction/" + str(a) + ".npy")
+
+# path="/data1/Dataset/pku/library/"
+# fx=[35, 34, 33, 32, 31, 30, 29, 28, 27, 26,
+# 25, 24, 23, 22, 21, 20, 19 ,18, 17, 16 ,
+# 5, 3, 4, 2, 0, 1, 46, 9, 47, 10,
+# 48, 11, 49, 12, 50, 13, 51, 14, 52, 15,
+# 53, 54, 55, 60, 61, 59, 58, 57, 56, 45,
+# 8, 44, 7, 43, 6, 42, 41, 40, 39, 38, 37, 36]
+# WIDTH = 4384
+# HEIGHT = 2464
+# prediction = [0]*62
+# for a in range(62):
+#     prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
 
 # 从ply读点云，暂时废弃
 def readPointCloud(ii):
@@ -152,16 +165,6 @@ def writePointCloud(x, y, z, r_new, g_new, b_new, path):
     file3.close()
 
 
-# prediction = [0]*10
-# for a in range(10):
-#     prediction[a] = np.load(path + "prediction/" + str(a) + ".npy")
-
-prediction = [0]*62
-for a in range(62):
-    prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
-    # print(prediction[a].shape)
-
-
 # 主函数，通过循环分批读取稠密点云，避免内存爆炸
 for ii in range(batch):
     print("iter: ", ii, "start")
@@ -185,10 +188,9 @@ for ii in range(batch):
     g_new = []
     b_new = []
 
-    k = int(POINT_N / 1000)
 
     for i in range(POINT_N):
-        d, index = tree.query(point[i], k=10)
+        d, index = tree.query(point[i], k=K)
 
         gg = p[i][0]
         rr = p[i][1]
@@ -243,7 +245,7 @@ for ii in range(batch):
     if TYPE == 0:
         writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_baseline.obj")
     elif TYPE == 1:
-        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_simple.obj")
+        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_simple_k=" + str(K) +".obj")
     else:
-        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_softmax.obj")
+        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_softmax_k=" + str(K) +".obj")
     print('write finished')
