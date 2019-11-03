@@ -5,7 +5,7 @@ import numpy as np
 # 0: baseline
 # 1: simple knn
 # 2: argmax knn
-TYPE = 1
+TYPE = 2
 
 # nearest neighbor
 K = 10
@@ -124,19 +124,19 @@ def readTxt(ii, softmax):
                     [prob0, prob1, prob2] = prediction[fx[int(imageInfo[0])]][h][w]
                     # print('probability:', [prob0, prob1, prob2])
 
+                    if softmax:
+                    # 对于softmax方法，累加其概率
+                        p0 += prob0
+                        p1 += prob1
+                        p2 += prob2
+                    else:
                     # 对于简单方法，直接取argmax
-                    if ~softmax:
                         if (prob0 >= prob1 and prob0 >= prob2):
                             p0 += 1
                         elif (prob1 >= prob0 and prob1 >= prob2):
                             p1 += 1
                         elif (prob2 >= prob0 and prob2 >= prob1):
                             p2 += 1
-                    # 对于softmax方法，累加其概率
-                    else:
-                        p0 += prob0
-                        p1 += prob1
-                        p2 += prob2
 
                 p0 /= nImage
                 p1 /= nImage
