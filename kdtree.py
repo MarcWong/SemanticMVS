@@ -8,32 +8,32 @@ import numpy as np
 TYPE = 2
 
 # nearest neighbor
-K = 10
+K = 8
 
 batch = 50
 POINT_N = 0
-resolution = 1
+resolution = 2
 
-path="/data1/Dataset/knn/"
-fx=[5,4,3,1,8,2,9,7,0,6]
-WIDTH = 4000
-HEIGHT = 3000
-prediction = [0]*10
-for a in range(10):
-    prediction[a] = np.load(path + "prediction/" + str(a) + ".npy")
+# path="/data1/Dataset/knn/"
+# fx=[5,4,3,1,8,2,9,7,0,6]
+# WIDTH = 4000
+# HEIGHT = 3000
+# prediction = [0]*10
+# for a in range(10):
+#     prediction[a] = np.load(path + "prediction/" + str(a) + ".npy")
 
-# path="/data1/Dataset/pku/library/"
-# fx=[35, 34, 33, 32, 31, 30, 29, 28, 27, 26,
-# 25, 24, 23, 22, 21, 20, 19 ,18, 17, 16 ,
-# 5, 3, 4, 2, 0, 1, 46, 9, 47, 10,
-# 48, 11, 49, 12, 50, 13, 51, 14, 52, 15,
-# 53, 54, 55, 60, 61, 59, 58, 57, 56, 45,
-# 8, 44, 7, 43, 6, 42, 41, 40, 39, 38, 37, 36]
-# WIDTH = 4384
-# HEIGHT = 2464
-# prediction = [0]*62
-# for a in range(62):
-#     prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
+path="/data1/Dataset/pku/library/"
+fx=[35, 34, 33, 32, 31, 30, 29, 28, 27, 26,
+25, 24, 23, 22, 21, 20, 19 ,18, 17, 16 ,
+5, 3, 4, 2, 0, 1, 46, 9, 47, 10,
+48, 11, 49, 12, 50, 13, 51, 14, 52, 15,
+53, 54, 55, 60, 61, 59, 58, 57, 56, 45,
+8, 44, 7, 43, 6, 42, 41, 40, 39, 38, 37, 36]
+WIDTH = 4384
+HEIGHT = 2464
+prediction = [0]*62
+for a in range(62):
+    prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
 
 # 从ply读点云，暂时废弃
 def readPointCloud(ii):
