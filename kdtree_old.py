@@ -7,36 +7,33 @@ import numpy as np
 # 2: argmax knn
 TYPE = 0
 
-CLASS = 5 # semantic classes
-K = 10 # nearest neighbors
-batch = 100
+# nearest neighbor
+K = 8
+
+batch = 50
 POINT_N = 0
-resolution = 2 # MVS resolution level
+resolution = 1
 
-# path="/data1/Dataset/knn/"
-# fx=[5,4,3,1,8,2,9,7,0,6]
-# WIDTH = 4000
-# HEIGHT = 3000
-# prediction = [0]*10
-# for a in range(10):
-#     prediction[a] = np.load(path + "prediction/" + str(a) + ".npy")
+path="/data1/Dataset/knn/"
+fx=[5,4,3,1,8,2,9,7,0,6]
+WIDTH = 4000
+HEIGHT = 3000
+prediction = [0]*10
+for a in range(10):
+    prediction[a] = np.load(path + "prediction/" + str(a) + ".npy")
 
-path="/data1/Dataset/pku/library/"
-fx=[35, 34, 33, 32, 31, 30, 29, 28, 27, 26,
-25, 24, 23, 22, 21, 20, 19 ,18, 17, 16 ,
-5, 3, 4, 2, 0, 1, 46, 9, 47, 10,
-48, 11, 49, 12, 50, 13, 51, 14, 52, 15,
-53, 54, 55, 60, 61, 59, 58, 57, 56, 45,
-8, 44, 7, 43, 6, 42, 41, 40, 39, 38, 37, 36]
-WIDTH = 4384
-HEIGHT = 2464
-prediction = [0]*62
-for a in range(62):
-    prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
-
-
-# BGR sequence
-label_colours = [(0,255,0),(0,0,255),(255,0,0),(0,255,255),(0,0,0)]
+# path="/data1/Dataset/pku/library/"
+# fx=[35, 34, 33, 32, 31, 30, 29, 28, 27, 26,
+# 25, 24, 23, 22, 21, 20, 19 ,18, 17, 16 ,
+# 5, 3, 4, 2, 0, 1, 46, 9, 47, 10,
+# 48, 11, 49, 12, 50, 13, 51, 14, 52, 15,
+# 53, 54, 55, 60, 61, 59, 58, 57, 56, 45,
+# 8, 44, 7, 43, 6, 42, 41, 40, 39, 38, 37, 36]
+# WIDTH = 4384
+# HEIGHT = 2464
+# prediction = [0]*62
+# for a in range(62):
+#     prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
 
 # 从ply读点云，暂时废弃
 def readPointCloud(ii):
@@ -103,7 +100,9 @@ def readTxt(ii, softmax):
                 line = file2.readline()
                 nImage = int(line.split()[0])
 
-                pt = np.zeros(CLASS, dtype='float32')
+                p0 = 0.0
+                p1 = 0.0
+                p2 = 0.0
                 for _ in range(nImage):
                     line = file2.readline()
                     imageInfo = line.split()
@@ -122,18 +121,27 @@ def readTxt(ii, softmax):
                         # print('u:', int(float(imageInfo[1])))
                         # print('v:', int(float(imageInfo[2])))
                         continue
-                    prob = prediction[fx[int(imageInfo[0])]][h][w]
-                    # print('probability:', prob)
+                    [prob0, prob1, prob2] = prediction[fx[int(imageInfo[0])]][h][w]
+                    # print('probability:', [prob0, prob1, prob2])
 
                     if softmax:
                     # 对于softmax方法，累加其概率
-                        pt += prob
+                        p0 += prob0
+                        p1 += prob1
+                        p2 += prob2
                     else:
                     # 对于简单方法，直接取argmax
-                        pt[np.argmax(prob)] += 1
+                        if (prob0 >= prob1 and prob0 >= prob2):
+                            p0 += 1
+                        elif (prob1 >= prob0 and prob1 >= prob2):
+                            p1 += 1
+                        elif (prob2 >= prob0 and prob2 >= prob1):
+                            p2 += 1
 
-                # pt /= nImage
-                p.append(pt)
+                p0 /= nImage
+                p1 /= nImage
+                p2 /= nImage
+                p.append([p0, p1, p2])
                 
         line = file2.readline()
     print('u:', u)
@@ -182,25 +190,56 @@ for ii in range(batch):
 
 
     for i in range(POINT_N):
+        d, index = tree.query(point[i], k=K)
 
-        pnn = p[i]
-
+        gg = p[i][0]
+        rr = p[i][1]
+        bb = p[i][2]
+        
+        flag = 0
         if TYPE > 0:
-            d, index = tree.query(point[i], k=K)
             for j in index:
-                pnn += p[j]
+                rr += p[j][1]
+                gg += p[j][0]
+                bb += p[j][2]
 
-        label = np.argwhere(pnn == np.amax(pnn)).flatten().tolist()
-        if len(label) == 1:
-            r_new.append(label_colours[label[0]][2])
-            g_new.append(label_colours[label[0]][1])
-            b_new.append(label_colours[label[0]][0])
-        else: # 存在多个最大值
-            l = np.argmax(p[i])
-            r_new.append(label_colours[l][2])
-            g_new.append(label_colours[l][1])
-            b_new.append(label_colours[l][0])
+        # print('rr:', rr)
+        # print('gg:', gg)
+        # print('bb:', bb)
 
+        if (rr > gg) and (rr > bb):
+            r_new.append(255)
+            g_new.append(0)
+            b_new.append(0)
+            flag = 1
+        if (gg > rr) and (gg > bb):
+            r_new.append(0)
+            g_new.append(255)
+            b_new.append(0)
+            flag = 1
+        if (bb > gg) and (bb > rr):
+            r_new.append(0)
+            g_new.append(0)
+            b_new.append(255)
+            flag = 1
+        if (flag == 0):
+            if (p[i][0] >= p[i][2] and p[i][0] >= p[i][1]):
+                r_new.append(0)
+                g_new.append(255)
+                b_new.append(0)
+            elif (p[i][1] >= p[i][2] and p[i][1] >= p[i][0]):
+                r_new.append(255)
+                g_new.append(0)
+                b_new.append(0)
+            elif (p[i][2] >= p[i][1] and p[i][2] >= p[i][0]):
+                r_new.append(0)
+                g_new.append(0)
+                b_new.append(255)
+            else:
+                r_new.append(255)
+                g_new.append(255)
+                b_new.append(255)
+            flag = 1
     print('knn finished')
 
     if TYPE == 0:
