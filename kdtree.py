@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
 from scipy import spatial
 import numpy as np
+import argparse
+import logging
 
-# 0: baseline
-# 1: simple knn
-# 2: argmax knn
-TYPE = 0
+parser = argparse.ArgumentParser()
+parser.add_argument('--type', type=int, default=0, help='algorithms, 0 for baseline, 1 for simple knn, 2 for softmax knn.')
+parser.add_argument('--classes', type=int, default=5, help='semantic classes')
+parser.add_argument('--K', type=int, default=8, help='nearest neighbors')
+parser.add_argument('--batch_size', type=int, default=100, help='divided into n batchs')
+parser.add_argument('--resolution_level', type=int, default=1, help='MVS resolution level')
+args = parser.parse_args()
 
-CLASS = 5 # semantic classes
-K = 10 # nearest neighbors
-batch = 100
+TYPE = args.type
+CLASS = args.classes
+K = args.K
+batch = args.batch_size
+resolution = args.resolution_level
 POINT_N = 0
-resolution = 2 # MVS resolution level
 
 # path="/data1/Dataset/knn/"
 # fx=[5,4,3,1,8,2,9,7,0,6]
@@ -33,6 +39,16 @@ HEIGHT = 2464
 prediction = [0]*62
 for a in range(62):
     prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
+
+###################### log system setup ############################
+logName=""
+if TYPE == 0:
+    logName = "{}baseline_resolution={}.txt".format(path, resolution)
+elif TYPE == 1:
+    logName = "{}simpleknn_resolution={}_k={}.txt".format(path, resolution, K)
+else:
+    logName = "{}softmaxknn_resolution={}_k={}.txt".format(path, resolution, K)
+logging.basicConfig(filename=logName, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 
 # BGR sequence
@@ -79,6 +95,8 @@ def readPointCloud(ii):
 
 # 从txt读二三维匹配点信息，投票
 def readTxt(ii, softmax):
+    logging.info("read start")
+    print("read start")
     file2 = open(path + "output.txt")
     x = []
     y = []
@@ -107,23 +125,23 @@ def readTxt(ii, softmax):
                 for _ in range(nImage):
                     line = file2.readline()
                     imageInfo = line.split()
-                    # max: 图片长度的1/2
+                    # max: 图片长度
                     if (u < int(float(imageInfo[1]))):
                         u = int(float(imageInfo[1]))
-                    # max: 图片宽度的1500
+                    # max: 图片宽度
                     if (v < int(float(imageInfo[2]))):
                         v = int(float(imageInfo[2]))
 
                     w = 2 * int(resolution * float(imageInfo[1]))
                     h = 2 * int(resolution * float(imageInfo[2]))
                     # 引用越界
-                    if (w >= WIDTH) or (h >= HEIGHT):                       
-                        # print('fx:', fx[int(imageInfo[0])])
-                        # print('u:', int(float(imageInfo[1])))
-                        # print('v:', int(float(imageInfo[2])))
+                    if (w >= WIDTH) or (h >= HEIGHT):
+                        logging.warning("overflow point! fx: {}".format(fx[int(imageInfo[0])]))
+                        logging.warning("overflow point! u: {}".format(int(float(imageInfo[1]))))
+                        logging.warning("overflow point! v: {}".format(int(float(imageInfo[2]))))
                         continue
                     prob = prediction[fx[int(imageInfo[0])]][h][w]
-                    # print('probability:', prob)
+                    # logging.info("probability:{}".format(prob))
 
                     if softmax:
                     # 对于softmax方法，累加其概率
@@ -136,19 +154,21 @@ def readTxt(ii, softmax):
                 p.append(pt)
                 
         line = file2.readline()
-    print('u:', u)
-    print('v:', v)
+    logging.info("u: {} ,v: {}".format(u,v))
+    print("u: {} ,v: {}".format(u,v))
+    logging.info("read finished")
+    print("read finished")
     file2.close()
     return [x, y, z, p]
 
 # 写点云到obj
 def writePointCloud(x, y, z, r_new, g_new, b_new, path):
-    # print('x:', len(x))
-    # print('y:', len(y))
-    # print('z:', len(z))
-    # print('r_new:', len(r_new))
-    # print('g_new:', len(g_new))
-    # print('b_new:', len(b_new))
+    # logging.info("x:{}".format(len(x)))
+    # logging.info("y:{}".format(len(y)))
+    # logging.info("z:{}".format(len(z)))
+    # logging.info("r_new:{}".format(len(r_new)))
+    # logging.info("g_new:{}".format(len(g_new)))
+    # logging.info("b_new:{}".format(len(b_new)))
     file3 = open(path, 'a')
 
     for i in range(POINT_N):
@@ -159,7 +179,8 @@ def writePointCloud(x, y, z, r_new, g_new, b_new, path):
 
 # 主函数，通过循环分批读取稠密点云，避免内存爆炸
 for ii in range(batch):
-    print("iter: ", ii, "start")
+    logging.info("iter: {} start".format(ii))
+    print("iter: {} start".format(ii))
 
     # read probability and 2-3D relation
     if TYPE < 2:
@@ -169,9 +190,11 @@ for ii in range(batch):
 
     point = np.array([x, y, z]).transpose()
     POINT_N = point.shape[0]
-    print(POINT_N)
+    logging.info("points: {}".format(POINT_N))
+    print("points: {}".format(POINT_N))
 
     tree = spatial.KDTree(point)
+    logging.info("build tree finished")
     print('build tree finished')
 
     # knn start
@@ -201,7 +224,8 @@ for ii in range(batch):
             g_new.append(label_colours[l][1])
             b_new.append(label_colours[l][0])
 
-    print('knn finished')
+    logging.info("knn finished")
+    print("knn finished")
 
     if TYPE == 0:
         writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_baseline.obj")
@@ -209,4 +233,5 @@ for ii in range(batch):
         writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_simple_k=" + str(K) +".obj")
     else:
         writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_softmax_k=" + str(K) +".obj")
-    print('write finished')
+    logging.info("write finished")
+    print("write finished")
