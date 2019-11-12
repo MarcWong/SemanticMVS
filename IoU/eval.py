@@ -63,6 +63,6 @@ def main():
     # pred_list.append(np.array(Image.open("d.png")))
     # gt_list.append(np.array(Image.open("c.png")))
     # gt_list.append(np.array(Image.open("d.png")))
-    print(evaluate_batch(gt_list,pred_list,5))
+    print(evaluate_batch(pred_list,gt_list,5))
 
 main()
