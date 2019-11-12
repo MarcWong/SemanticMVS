@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
 from metrics import Evaluator
 from PIL import Image
 import numpy as np
+import os
 
 def evaluate_single(gt,pred,num_of_class):
     evaluator = Evaluator(num_of_class)
@@ -39,16 +41,28 @@ def main():
     # just configure the number of class to be 4,
     # so the script will only read pixels 
     # where the value of gt belongs to [0,1,2,3].
-    pred = np.array(Image.open("1/pred/DJI_0285.png"))
+
+    pred = np.array(Image.open("1/pred/DJI_0285.JPG"))
     gt = np.array(Image.open("1/gt/DJI_0285.png"))
-    print(evaluate_single(pred,gt,4))
+    print(evaluate_single(pred,gt,5))
 
     pred_list = []
     gt_list = []
-    pred_list.append(np.array(Image.open("c.png")))
-    pred_list.append(np.array(Image.open("d.png")))
-    gt_list.append(np.array(Image.open("c.png")))
-    gt_list.append(np.array(Image.open("d.png")))
+    for root, _, files in os.walk("1/pred"):
+    # root 表示当前正在访问的文件夹路径
+    # dirs 表示该文件夹下的子目录名list
+    # files 表示该文件夹下的文件list
+        for f in files:
+            pred_list.append(np.array(Image.open(os.path.join(root,f))))
+
+    for root, _, files in os.walk("1/gt"):
+        for f in files:
+            gt_list.append(np.array(Image.open(os.path.join(root,f))))
+
+    # pred_list.append(np.array(Image.open("c.png")))
+    # pred_list.append(np.array(Image.open("d.png")))
+    # gt_list.append(np.array(Image.open("c.png")))
+    # gt_list.append(np.array(Image.open("d.png")))
     print(evaluate_batch(gt_list,pred_list,5))
 
 main()

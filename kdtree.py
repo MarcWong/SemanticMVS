@@ -41,7 +41,7 @@ print("knn start: path={}, logName={}, batch={}".format(path, logName, batch))
 
 ###################### dataset setup ############################
 
-# fx=[5,4,3,1,8,2,9,7,0,6]
+# fx=[5,4,3,2,7,0,9,8,1,6]
 # WIDTH = 4000 / resolution
 # HEIGHT = 3000 / resolution
 # prediction = [0]*10

@@ -1,24 +1,19 @@
 # -*- coding: utf-8 -*-
 import cv2
 import numpy as np
-images=[]
+
 resolution = 2
 label_colours = [(0,255,0),(0,0,255),(255,0,0),(0,255,255),(0,0,0)] # BGR sequence
 
 path="/data1/Dataset/knn/"
-fx=[5,4,3,1,8,2,9,7,0,6]
+fx=[5,4,3,2,7,0,9,8,1,6]
 WIDTH = 4000 / resolution
 HEIGHT = 3000 / resolution
 prediction = [0]*10
-for a in range(10):
-    prediction[a] = np.load(path + "prediction/DJI_02" + str(85+a) + ".npy")
+visualizations = np.zeros((10,HEIGHT,WIDTH,3))
+reprojs = np.zeros((10,HEIGHT,WIDTH))
 for i in range(10):
-    image=cv2.imread(path + "images/DJI_%04d.JPG"%(285+i))
-    image=cv2.resize(image,(WIDTH, HEIGHT))
-    for j in range(HEIGHT):
-        for k in range(WIDTH):
-            image[j][k]=[0,0,0]
-    images.append(image)
+    prediction[i] = np.load(path + "prediction/DJI_%04d.npy"%(285+i))
 
 # path="/data1/Dataset/pku/library/"
 # fx=[35, 34, 33, 32, 31, 30, 29, 28, 27, 26,
@@ -27,19 +22,13 @@ for i in range(10):
 # 48, 11, 49, 12, 50, 13, 51, 14, 52, 15,
 # 53, 54, 55, 60, 61, 59, 58, 57, 56, 45,
 # 8, 44, 7, 43, 6, 42, 41, 40, 39, 38, 37, 36]
-# WIDTH = 4384
-# HEIGHT = 2464
+# WIDTH = 4384 / resolution
+# HEIGHT = 2464 / resolution
 # prediction = [0]*62
-# for a in range(62):
-#     prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
+# visualizations = np.zeros((62,HEIGHT,WIDTH,3))
+# reprojs = np.zeros((62,HEIGHT,WIDTH))
 # for i in range(62):
-#     image=cv2.imread(path + "images/DJI010%02d.jpg"%(22+i))
-#     image=cv2.resize(image,(WIDTH / (2 * resolution), HEIGHT / (2 * resolution)))
-#     for j in range(HEIGHT / (2 * resolution)):
-#         for k in range(WIDTH / (2 * resolution)):
-#             image[j][k]=[0,0,0]
-#     images.append(image)
-
+#     prediction[i] = np.load(path + "prediction/DJI010%02d.jpg.npy"%(22+i))
 
 # 从txt读二三维匹配点信息
 def readTxt():
@@ -74,19 +63,15 @@ def readTxt():
                 w = int(resolution * float(xs[i]))
                 h = int(resolution * float(ys[i]))
                 if (w >= WIDTH) or (h >= HEIGHT):
-                    # print('fx:', fx[int(indexs[i])])
-                    # print('u:', w)
-                    # print('v:', h)
                     continue
 
                 prob = prediction[fx[indexs[i]]][h][w]
-
                 if (w < WIDTH) and (h < HEIGHT):
                     l = np.argmax(prob)
-                    images[fx[indexs[i]]][h][w]=label_colours[l]
+                    visualizations[fx[indexs[i]]][h][w]=label_colours[l]
+                    reprojs[fx[indexs[i]]][h][w]=l
         line=file.readline()
     print('points:', c)
-
 
 print('image read finished')
 
@@ -95,7 +80,8 @@ print('image read finished')
 readTxt()
 
 for i in range(10):
-    cv2.imwrite(path + "visualization/reproj_DJI_%04d.JPG"%(285+i),images[i])
-
+    cv2.imwrite(path + "visualization/visual_DJI_%04d.JPG"%(285+i),visualizations[i])
+    cv2.imwrite(path + "visualization/reproj_DJI_%04d.png"%(285+i),reprojs[i])
 # for i in range(62):
-#     cv2.imwrite(path + "visualization/reproj_DJI010%02d.jpg"%(22+i),images[i])
+    # cv2.imwrite(path + "visualization/visual_DJI010%02d.JPG"%(22+i),visualizations[i])
+    # cv2.imwrite(path + "visualization/reproj_DJI010%02d.png"%(22+i),reprojs[i])
