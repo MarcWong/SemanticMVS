@@ -2,20 +2,21 @@
 import cv2
 import numpy as np
 images=[]
-resolution = 1
+resolution = 2
+label_colours = [(0,255,0),(0,0,255),(255,0,0),(0,255,255),(0,0,0)] # BGR sequence
 
 path="/data1/Dataset/knn/"
 fx=[5,4,3,1,8,2,9,7,0,6]
-WIDTH = 4000
-HEIGHT = 3000
+WIDTH = 4000 / resolution
+HEIGHT = 3000 / resolution
 prediction = [0]*10
 for a in range(10):
-    prediction[a] = np.load("/data1/Dataset/knn/prediction/"+str(a)+".npy")
+    prediction[a] = np.load(path + "prediction/DJI_02" + str(85+a) + ".npy")
 for i in range(10):
     image=cv2.imread(path + "images/DJI_%04d.JPG"%(285+i))
-    image=cv2.resize(image,(WIDTH / (2 * resolution), HEIGHT / (2 * resolution)))
-    for j in range(HEIGHT / (2 * resolution)):
-        for k in range(WIDTH / (2 * resolution)):
+    image=cv2.resize(image,(WIDTH, HEIGHT))
+    for j in range(HEIGHT):
+        for k in range(WIDTH):
             image[j][k]=[0,0,0]
     images.append(image)
 
@@ -33,7 +34,7 @@ for i in range(10):
 #     prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
 # for i in range(62):
 #     image=cv2.imread(path + "images/DJI010%02d.jpg"%(22+i))
-    # image=cv2.resize(image,(WIDTH / (2 * resolution), HEIGHT / (2 * resolution)))
+#     image=cv2.resize(image,(WIDTH / (2 * resolution), HEIGHT / (2 * resolution)))
 #     for j in range(HEIGHT / (2 * resolution)):
 #         for k in range(WIDTH / (2 * resolution)):
 #             image[j][k]=[0,0,0]
@@ -70,29 +71,19 @@ def readTxt():
 
             for i in range(nImage):
                 # 引用越界
-                w = 2 * int(resolution * float(xs[i]))
-                h = 2 * int(resolution * float(ys[i]))
-                if ( w >= WIDTH) or (h >= HEIGHT):                       
-                    print('fx:', fx[int(indexs[i])])
-                    print('u:', int(float(xs[i])))
-                    print('v:', int(float(ys[i])))
+                w = int(resolution * float(xs[i]))
+                h = int(resolution * float(ys[i]))
+                if (w >= WIDTH) or (h >= HEIGHT):
+                    # print('fx:', fx[int(indexs[i])])
+                    # print('u:', w)
+                    # print('v:', h)
                     continue
 
-                [prob0, prob1, prob2] = prediction[fx[int(indexs[i])]][h][w]
+                prob = prediction[fx[indexs[i]]][h][w]
 
-                if (xs[i] * resolution < WIDTH) and (ys[i] * resolution< HEIGHT):
-                    if (prob0 > prob1) and (prob0 > prob2):
-                        images[fx[indexs[i]]][ys[i]][xs[i]][0]=0
-                        images[fx[indexs[i]]][ys[i]][xs[i]][1]=255
-                        images[fx[indexs[i]]][ys[i]][xs[i]][2]=0
-                    if (prob1 > prob0) and (prob1 > prob2):
-                        images[fx[indexs[i]]][ys[i]][xs[i]][0]=0
-                        images[fx[indexs[i]]][ys[i]][xs[i]][1]=0
-                        images[fx[indexs[i]]][ys[i]][xs[i]][2]=255
-                    if (prob2 > prob1) and (prob2 > prob0):
-                        images[fx[indexs[i]]][ys[i]][xs[i]][0]=255
-                        images[fx[indexs[i]]][ys[i]][xs[i]][1]=0
-                        images[fx[indexs[i]]][ys[i]][xs[i]][2]=0
+                if (w < WIDTH) and (h < HEIGHT):
+                    l = np.argmax(prob)
+                    images[fx[indexs[i]]][h][w]=label_colours[l]
         line=file.readline()
     print('points:', c)
 
