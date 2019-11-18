@@ -60,7 +60,6 @@ print("knn start: path={}, logName={}, batch={}".format(path, logName, batch))
 # for a in range(62):
 #     prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
 
-
 fx=[193, 192, 191, 190, 189, 188, 187, 186 ,185, 184, 183, 182, 181, 180, 179,
 178, 177, 176, 175, 174, 173, 172, 171, 170, 169, 168, 167, 166, 165, 164, 163,
 162, 161, 160, 159, 158, 157, 156, 153, 152, 151, 150, 149, 148, 147, 146, 145,
@@ -120,7 +119,7 @@ def readPointCloud(ii):
             # b.append(int(dt[6]))
 
             # run dense
-            
+
             print('x:', dt[0])
             x.append(float(dt[0]))
             y.append(float(dt[1]))
