@@ -26,7 +26,8 @@ def evaluate_batch(gt_list,pred_list,num_of_class):
     mIoU = evaluator.Mean_Intersection_over_Union()
     FWIoU = evaluator.Frequency_Weighted_Intersection_over_Union()
 
-    return Acc, Acc_class, mIoU, FWIoU
+    return "像素准确率{}".format(Acc)
+    # return Acc, Acc_class, mIoU, FWIoU
 
 def main():
     # Example code: 
@@ -42,9 +43,9 @@ def main():
     # so the script will only read pixels 
     # where the value of gt belongs to [0,1,2,3].
 
-    pred = np.array(Image.open("1/pred/DJI_0285.JPG"))
-    gt = np.array(Image.open("1/gt/DJI_0285.png"))
-    print(evaluate_single(pred,gt,5))
+    # pred = np.array(Image.open("1/pred/DJI_0285.JPG"))
+    # gt = np.array(Image.open("1/gt/DJI_0285.png"))
+    # print(evaluate_single(pred,gt,5))
 
     pred_list = []
     gt_list = []
@@ -59,10 +60,6 @@ def main():
         for f in files:
             gt_list.append(np.array(Image.open(os.path.join(root,f))))
 
-    # pred_list.append(np.array(Image.open("c.png")))
-    # pred_list.append(np.array(Image.open("d.png")))
-    # gt_list.append(np.array(Image.open("c.png")))
-    # gt_list.append(np.array(Image.open("d.png")))
     print(evaluate_batch(pred_list,gt_list,5))
 
 main()
