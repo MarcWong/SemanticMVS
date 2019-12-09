@@ -7,9 +7,12 @@ class Evaluator(object):
         self.confusion_matrix = np.zeros((self.num_class,)*2)
 
     def Pixel_Accuracy(self):
-        print(self.confusion_matrix)
-        
-        Acc = np.diag(self.confusion_matrix[:-1][:-1]).sum() / self.confusion_matrix[:-1][:-1].sum()
+        a = self.confusion_matrix[1][1] + self.confusion_matrix[2][2] + self.confusion_matrix[3][3] + self.confusion_matrix[4][4]
+        b = self.confusion_matrix[1][1] + self.confusion_matrix[1][2] + self.confusion_matrix[1][3] + self.confusion_matrix[1][4]
+        c = self.confusion_matrix[2][1] + self.confusion_matrix[2][2] + self.confusion_matrix[2][3] + self.confusion_matrix[2][4]
+        d = self.confusion_matrix[3][1] + self.confusion_matrix[3][2] + self.confusion_matrix[3][3] + self.confusion_matrix[3][4]
+        e = self.confusion_matrix[4][1] + self.confusion_matrix[4][2] + self.confusion_matrix[4][3] + self.confusion_matrix[4][4]
+        Acc = a / (b+c+d+e)
         # Acc = np.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum()
         return Acc
 
