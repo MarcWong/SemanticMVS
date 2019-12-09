@@ -9,7 +9,7 @@ label_colours = [(0,255,0),(0,0,255),(255,0,0),(0,255,255),(0,0,0)] # BGR sequen
 
 # path="/data1/Dataset/knn/"
 # path="/data1/Dataset/pku/library/"
-path="/data1/Dataset/pku/m1_resized/"
+path="/data1/Dataset/pku/m1_semantic/"
 
 ###################### dataset setup ############################
 
@@ -53,8 +53,8 @@ fx=[193, 192, 191, 190, 189, 188, 187, 186 ,185, 184, 183, 182, 181, 180, 179,
 233, 35, 232, 34, 231, 33, 230, 229, 228, 227, 226, 225, 224, 223, 222, 221, 220, 219,
 218, 217, 216, 215, 214, 213, 212, 211, 210, 15, 209, 14, 208, 207, 206, 205, 204,
 203, 202, 201, 200, 199, 198, 197, 196, 195, 194]
-WIDTH = 4000 / resolution
-HEIGHT = 3000 / resolution
+WIDTH = 1000
+HEIGHT = 750
 prediction = [0]*333
 visualizations = np.zeros((333,HEIGHT,WIDTH,3), dtype='uint8')
 reprojs = np.zeros((333,HEIGHT,WIDTH), dtype='uint8')
@@ -99,12 +99,12 @@ def readTxt():
 
             for i in range(nImage):
                 # 引用越界
-                w = int(resolution * float(xs[i]))
-                h = int(resolution * float(ys[i]))
+                w = int(float(xs[i]))
+                h = int(float(ys[i]))
                 if (w >= WIDTH) or (h >= HEIGHT):
                     continue
 
-                prob = prediction[fx[indexs[i]]][h][w]
+                prob = prediction[fx[indexs[i]]][resolution*h][resolution*w]
                 if (w < WIDTH) and (h < HEIGHT):
                     l = np.argmax(prob)
                     visualizations[fx[indexs[i]]][h][w]=label_colours[l]

@@ -87,7 +87,7 @@ prediction = [0]*333
 a = 0
 t = 0
 while a < 288:
-    filePath = path + "prediction/" + str(285+t) + ".npy"
+    filePath = path + "prediction/DJI_0" + str(285+t) + ".npy"
     if os.path.exists(filePath):
         prediction[t] = np.load(filePath)
         a+=1
