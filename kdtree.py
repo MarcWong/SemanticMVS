@@ -331,12 +331,12 @@ def energy_fusion(x, y, z, p):
                     ct = 0
                     for k in index:
                         if (dk[ct] < dsum) and (ct > 0):
-                            p[i] += p[k]
+                            root += p[k]
                             # rr += bool(r[k])
                             # gg += bool(g[k])
                             # bb += bool(b[k])
                             if (visit[k] == 0):
-                                if p[k][0] == root[0] and p[k][1] == root[1] and p[k][2] == root[2]:
+                                if p[k][0] == p[i][0] and p[k][1] == p[i][1] and p[k][2] == p[i][2]:
                                 # if ((r[k] == rootr) and (g[k] == rootg) and (b[k] == rootb)):
                                     temp.append(point[k])
                                     all.append(k)
