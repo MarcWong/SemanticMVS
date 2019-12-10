@@ -4,11 +4,12 @@ import numpy as np
 import argparse
 import logging
 import os
+import operator
 from util import calcDistance
 
 ###################### params ############################
 parser = argparse.ArgumentParser()
-parser.add_argument('--type', type=int, default=0, help='algorithms, 0 for baseline, 1 for simple knn, 2 for softmax knn.')
+parser.add_argument('--type', type=int, default=0, help='algorithms, 0 for baseline, 1 for simple knn, 2 for softmax knn, 3 for energy min.')
 parser.add_argument('--classes', type=int, default=5, help='semantic classes')
 parser.add_argument('--K', type=int, default=8, help='nearest neighbors')
 parser.add_argument('--batch_size', type=int, default=100, help='divided into n batchs')
@@ -34,11 +35,14 @@ if TYPE == 0:
     logName = "{}baseline_resolution={}.txt".format(path, resolution)
 elif TYPE == 1:
     logName = "{}simpleknn_resolution={}_k={}.txt".format(path, resolution, K)
-else:
+elif TYPE == 2:
     logName = "{}softmaxknn_resolution={}_k={}.txt".format(path, resolution, K)
+else:
+    logName = "{}energy_resolution={}.txt".format(path, resolution)
+
 logging.basicConfig(filename=logName, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.info("knn start: path={}, logName={}, batch={}".format(path, logName, batch,))
-print("knn start: path={}, logName={}, batch={}".format(path, logName, batch))
+logging.info("Algorithm begin: path={}, logName={}, batch={}".format(path, logName, batch,))
+print("Algorithm begin: path={}, logName={}, batch={}".format(path, logName, batch))
 
 ###################### dataset setup ############################
 
@@ -131,35 +135,25 @@ while a < 288:
 
 ###################### functions ############################
 
-# 从ply读点云，暂时废弃
+# 从ply读点云
 def readPointCloud(ii):
-    file1 = open('sparse_dense.ply')
+    file1 = open(path + "semantic/model_dense.ply")
 
     for _ in range(13):
         line = file1.readline()
+
+    line = file1.readline()
     x = []
     y = []
     z = []
     p = []
 
     ct = 0
-
-    line = file1.readline()
     while line:
         if (ct % batch == ii):
             dt = line.split()
 
-            # run sparse
-            # x.append(float(dt[1]))
-            # y.append(float(dt[2]))
-            # z.append(float(dt[3]))
-            # r.append(int(dt[4]))
-            # g.append(int(dt[5]))
-            # b.append(int(dt[6]))
-
             # run dense
-
-            print('x:', dt[0])
             x.append(float(dt[0]))
             y.append(float(dt[1]))
             z.append(float(dt[2]))
@@ -167,10 +161,11 @@ def readPointCloud(ii):
 
         line = file1.readline()
         ct += 1
+
     file1.close()
     return [x, y, z, p]
 
-# 从txt读二三维匹配点信息，投票
+# 从txt读二三维匹配点信息
 def readTxt(ii, softmax):
     logging.info("read start")
     print("read start")
@@ -196,8 +191,8 @@ def readTxt(ii, softmax):
                 nImage = int(line.split()[0])
 
                 # 过滤掉只有两个视角看到的点
-                if nImage < 3:
-                    continue
+                # if nImage < 3:
+                #     continue
 
                 x.append(float(dt[1]))
                 y.append(float(dt[2]))
@@ -243,35 +238,7 @@ def readTxt(ii, softmax):
     file2.close()
     return [x, y, z, p]
 
-# 写点云到obj
-def writePointCloud(x, y, z, r_new, g_new, b_new, path):
-    # logging.info("x:{}".format(len(x)))
-    # logging.info("y:{}".format(len(y)))
-    # logging.info("z:{}".format(len(z)))
-    # logging.info("r_new:{}".format(len(r_new)))
-    # logging.info("g_new:{}".format(len(g_new)))
-    # logging.info("b_new:{}".format(len(b_new)))
-    file3 = open(path, 'a')
-
-    for i in range(POINT_N):
-        file3.write(
-            'v ' + str(x[i]) + ' ' + str(y[i]) + ' ' + str(z[i]) + ' ' + str(r_new[i]) + ' ' + str(g_new[i]) + ' ' + str(b_new[i]) + '\n')
-    file3.close()
-
-
-###################### main ############################
-
-# 主函数，通过循环分批读取稠密点云，避免内存爆炸
-for ii in range(batch):
-    logging.info("iter: {} start".format(ii))
-    print("iter: {} start".format(ii))
-
-    # read probability and 2-3D relation
-    if TYPE < 2:
-        [x, y, z, p] = readTxt(ii, False)
-    else:
-        [x, y, z, p] = readTxt(ii, True)
-
+def knn_fusion(x, y, z, p):
     point = np.array([x, y, z]).transpose()
     POINT_N = point.shape[0]
     logging.info("points: {}".format(POINT_N))
@@ -281,11 +248,9 @@ for ii in range(batch):
     logging.info("build tree finished")
     print('build tree finished')
 
-    # knn start
-
-    r_new = []
-    g_new = []
-    b_new = []
+    r_new = [0] * len(x)
+    g_new = [0] * len(x)
+    b_new = [0] * len(x)
 
 
     for i in range(POINT_N):
@@ -293,32 +258,164 @@ for ii in range(batch):
         pnn = p[i]
 
         if TYPE > 0:
-            d, index = tree.query(point[i], k=K)
-            for j in index:
-                pnn += p[j]
-                distance = calcDistance(point[i], point[j])
-                if (distance > 1):
-                    pnn += p[j] / (distance * distance)
+            if K > 1:
+                _, index = tree.query(point[i], k=K)
+                for j in index:
+                    pnn += p[j]
+                    # use the e distance
+                    distance = calcDistance(point[i], point[j])
+                    if (distance > 1):
+                        pnn += p[j] / (distance * distance)
 
         label = np.argwhere(pnn == np.amax(pnn)).flatten().tolist()
         if len(label) == 1:
-            r_new.append(label_colours[label[0]][2])
-            g_new.append(label_colours[label[0]][1])
-            b_new.append(label_colours[label[0]][0])
+            r_new[i] = label_colours[label[0]][2]
+            g_new[i] = label_colours[label[0]][1]
+            b_new[i] = label_colours[label[0]][0]
         else: # 存在多个最大值
             l = np.argmax(p[i])
-            r_new.append(label_colours[l][2])
-            g_new.append(label_colours[l][1])
-            b_new.append(label_colours[l][0])
+            r_new[i] = label_colours[l][2]
+            g_new[i] = label_colours[l][1]
+            b_new[i] = label_colours[l][0]
 
-    logging.info("knn finished")
-    print("knn finished")
+    logging.info("refine finished")
+    print("refine finished")
+    return [r_new, g_new, b_new]
 
+def energy_fusion(x, y, z, p):
+    point = np.array([x, y, z]).transpose()
+    POINT_N = point.shape[0]
+    logging.info("points: {}".format(POINT_N))
+    print("points: {}".format(POINT_N))
+
+    tree = spatial.KDTree(point)
+    logging.info("build tree finished")
+    print('build tree finished')
+
+    # dsum = 0
+    # k = int(POINT_N / 1000)
+    # for i in range(POINT_N):
+    #    d, index = tree.query(point[i], k=K)
+    #    for dk in d:
+    #         dsum+=dk
+    # dsum=dsum/POINT_N/10
+    # print(dsum)
+    dsum = 0.02
+
+    visit = [0] * len(x)
+    r_new = [0] * len(x)
+    g_new = [0] * len(x)
+    b_new = [0] * len(x)
+
+
+    for i in range(POINT_N):
+
+        if (visit[i] == 0):
+            visit[i] = 1
+            root = p[i]
+            # rootr = r[i]
+            # rootg = g[i]
+            # rootb = b[i]
+            # rr = bool(root[0])
+            # gg = bool(root[1])
+            # bb = bool(root[2])
+            queue = []
+            all = []
+            queue.append(point[i])
+            all.append(i)
+            while (len(queue) > 0):
+                temp = []
+                for j in range(len(queue)):
+                    d, index = tree.query(queue[j], k=K)
+                    dk = np.array(d)
+                    ct = 0
+                    for k in index:
+                        if (dk[ct] < dsum) and (ct > 0):
+                            p[i] += p[k]
+                            # rr += bool(r[k])
+                            # gg += bool(g[k])
+                            # bb += bool(b[k])
+                            if (visit[k] == 0):
+                                if p[k][0] == root[0] and p[k][1] == root[1] and p[k][2] == root[2]:
+                                # if ((r[k] == rootr) and (g[k] == rootg) and (b[k] == rootb)):
+                                    temp.append(point[k])
+                                    all.append(k)
+                                    visit[k] = 1
+                        ct += 1
+                queue = temp
+
+            for j in range(len(all)):
+                # flag = 0
+                label = np.argwhere(root == np.amax(root)).flatten().tolist()
+                if len(label) == 1:
+                    r_new[all[j]] = label_colours[label[0]][2]
+                    g_new[all[j]] = label_colours[label[0]][1]
+                    b_new[all[j]] = label_colours[label[0]][0]
+                else: # 存在多个最大值
+                    l = np.argmax(p[all[j]])
+                    r_new[all[j]] = label_colours[l][2]
+                    g_new[all[j]] = label_colours[l][1]
+                    b_new[all[j]] = label_colours[l][0]
+                # if (rr > gg) and (rr > bb):
+                #     r_new[all[j]] = 255
+                #     flag = 1
+                # if (gg > rr) and (gg > bb):
+                #     g_new[all[j]] = 255
+                #     flag = 1
+                # if (bb > gg) and (bb > rr):
+                #     b_new[all[j]] = 255
+                #     flag = 1
+                # if (flag == 0):
+                #     r_new[all[j]] = rootr
+                #     g_new[all[j]] = rootg
+                #     b_new[all[j]] = rootb
+                #     flag = 1
+
+    print('refine finished')
+    print("refine finished")
+    return [r_new, g_new, b_new]
+
+# 写点云到obj
+def writePointCloud(x, y, z, r_new, g_new, b_new, path):
+    point = np.array([x, y, z]).transpose()
+    POINT_N = point.shape[0]
+
+    file3 = open(path, 'a')
+    for i in range(POINT_N):
+        file3.write(
+            'v ' + str(x[i]) + ' ' + str(y[i]) + ' ' + str(z[i]) + ' ' + str(r_new[i]) + ' ' + str(g_new[i]) + ' ' + str(b_new[i]) + '\n')
+    file3.close()
+
+
+###################### main ############################
+
+# 主函数，通过循环分批读取稠密点云，避免内存爆炸
+for ii in range(1):
+    print(TYPE)
+    logging.info("iter: {} start".format(ii))
+    print("iter: {} start".format(ii))
+
+    # read probability and 2-3D relation
+    if TYPE < 2:
+        [x, y, z, p] = readTxt(ii, False)
+    else:
+        [x, y, z, p] = readTxt(ii, True)
+
+    # refine start
+    if TYPE == 3:
+        [r_new,g_new,b_new] = energy_fusion(x, y, z, p)
+    else:
+        [r_new,g_new,b_new] = knn_fusion(x, y, z, p)
+
+    # write Point Cloud
     if TYPE == 0:
         writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_baseline.obj")
     elif TYPE == 1:
-        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_simple_k=" + str(K) +".obj")
+        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_simple_k=" + str(K) + "batch_size=" + str(batch) +".obj")
+    elif TYPE == 2:
+        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_softmax_k=" + str(K) + "batch_size=" + str(batch) +".obj")
     else:
-        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_softmax_k=" + str(K) +".obj")
+        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_graph_k=" + str(K) + "batch_size=" + str(batch) + ".obj")
+
     logging.info("write finished")
     print("write finished")

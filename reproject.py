@@ -1,9 +1,19 @@
 # -*- coding: utf-8 -*-
 import cv2
 import numpy as np
+import argparse
 import os
 
 ###################### params ############################
+parser = argparse.ArgumentParser()
+parser.add_argument('--type', type=int, default=0, help='algorithms, 0 for baseline, 1 for simple knn, 2 for softmax knn.')
+parser.add_argument('--batch_size', type=int, default=100, help='divided into n batchs')
+parser.add_argument('--obj_path', type=str, default="", help='semantic point cloud path')
+args = parser.parse_args()
+
+obj_path=args.obj_path
+TYPE = args.type
+batch = args.batch_size
 resolution = 2
 label_colours = [(0,255,0),(0,0,255),(255,0,0),(0,255,255),(0,0,0)] # BGR sequence
 
@@ -30,11 +40,13 @@ path="/data1/Dataset/pku/m1_semantic/"
 # 8, 44, 7, 43, 6, 42, 41, 40, 39, 38, 37, 36]
 # WIDTH = 4384 / resolution
 # HEIGHT = 2464 / resolution
-# prediction = [0]*62
-# visualizations = np.zeros((62,HEIGHT,WIDTH,3), dtype='uint8')
-# reprojs = np.zeros((62,HEIGHT,WIDTH), dtype='uint8')
-# for i in range(62):
-#     prediction[i] = np.load(path + "prediction/DJI010%02d.jpg.npy"%(22+i))
+
+# if TYPE == 0:
+#     prediction = [0]*62
+#     visualizations = np.zeros((62,HEIGHT,WIDTH,3), dtype='uint8')
+#     reprojs = np.zeros((62,HEIGHT,WIDTH), dtype='uint8')
+#     for i in range(62):
+#         prediction[i] = np.load(path + "prediction/DJI010%02d.jpg.npy"%(22+i))
 
 fx=[193, 192, 191, 190, 189, 188, 187, 186 ,185, 184, 183, 182, 181, 180, 179,
 178, 177, 176, 175, 174, 173, 172, 171, 170, 169, 168, 167, 166, 165, 164, 163,
@@ -55,68 +67,107 @@ fx=[193, 192, 191, 190, 189, 188, 187, 186 ,185, 184, 183, 182, 181, 180, 179,
 203, 202, 201, 200, 199, 198, 197, 196, 195, 194]
 WIDTH = 1000
 HEIGHT = 750
-prediction = [0]*333
 visualizations = np.zeros((333,HEIGHT,WIDTH,3), dtype='uint8')
 reprojs = np.zeros((333,HEIGHT,WIDTH), dtype='uint8')
-a = 0
-t = 0
-while a < 288:
-    filePath = path + "prediction/DJI_0" + str(285+t) + ".npy"
-    if os.path.exists(filePath):
-        prediction[t] = np.load(filePath)
-        a+=1
-    t+=1
+if TYPE == 0:
+    prediction = [0]*333
+    a = 0
+    t = 0
+    while a < 288:
+        filePath = path + "prediction/DJI_0" + str(285+t) + ".npy"
+        if os.path.exists(filePath):
+            prediction[t] = np.load(filePath)
+            a+=1
+        t+=1
 
 ###################### functions ############################
 
+def bgr2label(bgr_array):
+    label = -1
+    for i in range(len(label_colours)):
+        if label_colours[i] == bgr_array:
+            label = i
+            break
+    return label
+
 # 从txt读二三维匹配点信息
-def readTxt():
+def readTxt(ii, readOBJ, file2):
+    print('start reading txt')
     file = open(path + "output.txt")
+
     line = file.readline()
-    c=0
+    ct = 0
     while (line):
-        c=c+1
         dt=line.split()
 
         # 3D point
         if (dt[0] == 'v'):
-            indexs=[]
-            xs=[]
-            ys=[]
-            line = file.readline()
-            nImage = int(line.split()[0])
+            ct += 1
 
-            for _ in range(nImage):
-                line=file.readline()
-                dt=line.split()
-                index=int(dt[0])
-                x=int(float(dt[1]))
-                y=int(float(dt[2]))
-                indexs.append(index)
-                xs.append(x)
-                ys.append(y)
-            
+            if (ct % batch == ii):
+                indexs=[]
+                xs=[]
+                ys=[]
+                pp = (dt[1],dt[2],dt[3])
+                line = file.readline()
+                nImage = int(line.split()[0])
 
-            for i in range(nImage):
-                # 引用越界
-                w = int(float(xs[i]))
-                h = int(float(ys[i]))
-                if (w >= WIDTH) or (h >= HEIGHT):
-                    continue
+                for _ in range(nImage):
+                    line=file.readline()
+                    dt=line.split()
+                    index=int(dt[0])
+                    xx=int(float(dt[1]))
+                    yy=int(float(dt[2]))
+                    indexs.append(index)
+                    xs.append(xx)
+                    ys.append(yy)
 
-                prob = prediction[fx[indexs[i]]][resolution*h][resolution*w]
-                if (w < WIDTH) and (h < HEIGHT):
-                    l = np.argmax(prob)
-                    visualizations[fx[indexs[i]]][h][w]=label_colours[l]
-                    reprojs[fx[indexs[i]]][h][w]=l
-        line=file.readline()
-    print('points:', c)
+                if readOBJ:
+                    line2 = file2.readline()
+                    dt2 = line2.split()
+                    if len(dt2) == 7 and pp == (dt2[1],dt2[2],dt2[3]):
+                        l = bgr2label((int(dt2[6]),int(dt2[5]),int(dt2[4])))
+                    else:
+                        continue
+
+
+                for i in range(nImage):
+                    # 引用越界
+                    w = int(float(xs[i]))
+                    h = int(float(ys[i]))
+                    if (w >= WIDTH) or (h >= HEIGHT):
+                        continue
+
+                    if not readOBJ:
+                        prob = prediction[fx[indexs[i]]][resolution*h][resolution*w]
+                        l = np.argmax(prob)
+
+                    if (w < WIDTH) and (h < HEIGHT):
+                        visualizations[fx[indexs[i]]][h][w]=label_colours[l]
+                        reprojs[fx[indexs[i]]][h][w]=l
+
+        line = file.readline()
+    print('points:', ct)
 
 print('image read finished')
 
 
 # read probability from 2-3D relation Txt
-readTxt()
+
+# 主函数，通过循环分批读取稠密点云，避免内存爆炸
+for ii in range(1):
+    print("iter: {} start".format(ii))
+    if TYPE == 0:
+        readTxt(ii, False, None)
+    else:
+        filePath = path + obj_path
+        if os.path.exists(filePath):
+            file2 = open(filePath)
+            readTxt(ii, True, file2)
+        else:
+            print('no such file: {}'.format(filePath))
+            break
+
 
 # for i in range(10):
 #     cv2.imwrite(path + "reproj/visual_DJI_%04d.JPG"%(285+i),visualizations[i])
@@ -130,6 +181,7 @@ a = 0
 t = 0
 while a < 288:
     filePath = path + "prediction/DJI_0" + str(285+t) + ".npy"
+    print('writing: DJI_0{}'.format(285+t))
     if os.path.exists(filePath):
         cv2.imwrite(path + "reproj/visual_DJI_%04d.JPG"%(285+t),visualizations[t])
         cv2.imwrite(path + "reproj/reproj_DJI_%04d.png"%(285+t),reprojs[t])
