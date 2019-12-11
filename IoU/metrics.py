@@ -1,19 +1,37 @@
+import matplotlib.pyplot as plt
 import numpy as np
 
+def plot_confusion_matrix(cm, labels_name, title):
+    cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]    # 归一化
+    print(cm)
+
+    plt.figure(figsize=(12,9))
+    plt.imshow(cm, cmap='Blues', aspect='auto', extent=[-0.5,3.5,3,0])    # 在特定的窗口上显示图像
+    plt.title(title)    # 图像标题
+    plt.colorbar()
+    num_local = np.array(range(len(labels_name)))
+    plt.xticks(num_local, labels_name)    # 将标签印在x轴坐标上
+
+    plt.yticks(num_local, labels_name, rotation='90')    # 将标签印在y轴坐标上
+    plt.ylabel('Ground Truth label')
+    plt.xlabel('Predicted label')
 
 class Evaluator(object):
     def __init__(self, num_class):
         self.num_class = num_class
         self.confusion_matrix = np.zeros((self.num_class,)*2)
+    def Save_Matrix(self):
+        plot_confusion_matrix(self.confusion_matrix[1:,1:], ["building", "vegetarian", "road", "car"], "Confusion Matrix")
+        plt.savefig('confusion_matrix.png', format='png')
+
+        plt.show()
 
     def Pixel_Accuracy(self):
-        a = self.confusion_matrix[1][1] + self.confusion_matrix[2][2] + self.confusion_matrix[3][3] + self.confusion_matrix[4][4]
-        b = self.confusion_matrix[1][1] + self.confusion_matrix[1][2] + self.confusion_matrix[1][3] + self.confusion_matrix[1][4]
-        c = self.confusion_matrix[2][1] + self.confusion_matrix[2][2] + self.confusion_matrix[2][3] + self.confusion_matrix[2][4]
-        d = self.confusion_matrix[3][1] + self.confusion_matrix[3][2] + self.confusion_matrix[3][3] + self.confusion_matrix[3][4]
-        e = self.confusion_matrix[4][1] + self.confusion_matrix[4][2] + self.confusion_matrix[4][3] + self.confusion_matrix[4][4]
-        Acc = a / (b+c+d+e)
+        # print(self.confusion_matrix[1:,1:])
+        self.Save_Matrix()
+        Acc = np.diag(self.confusion_matrix[1:,1:]).sum() / self.confusion_matrix[1:,1:].sum()
         # Acc = np.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum()
+
         return Acc
 
     def Pixel_Accuracy_Class(self):

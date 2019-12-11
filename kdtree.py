@@ -396,10 +396,10 @@ for ii in range(1):
     print("iter: {} start".format(ii))
 
     # read probability and 2-3D relation
-    if TYPE < 2:
-        [x, y, z, p] = readTxt(ii, False)
-    else:
+    if TYPE == 2 :
         [x, y, z, p] = readTxt(ii, True)
+    else:
+        [x, y, z, p] = readTxt(ii, False)
 
     # refine start
     if TYPE == 3:
