@@ -27,8 +27,8 @@ def evaluate_batch(gt_list,pred_list,num_of_class):
     mIoU = evaluator.Mean_Intersection_over_Union()
     FWIoU = evaluator.Frequency_Weighted_Intersection_over_Union()
 
-    return Acc, Acc_class
-    # return Acc, Acc_class, mIoU, FWIoU
+    # return Acc, Acc_class
+    return Acc, Acc_class, mIoU, FWIoU
 
 def main():
     # Example code: 
