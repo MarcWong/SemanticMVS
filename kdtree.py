@@ -5,7 +5,7 @@ import argparse
 import logging
 import os
 import operator
-from util import calcDistance
+from util.util import calcDistance, writePointCloud
 
 ###################### params ############################
 parser = argparse.ArgumentParser()
@@ -16,7 +16,7 @@ parser.add_argument('--batch_size', type=int, default=100, help='divided into n 
 parser.add_argument('--resolution_level', type=int, default=1, help='MVS resolution level')
 args = parser.parse_args()
 
-label_colours = [(0,255,0),(0,0,255),(255,0,0),(0,255,255),(0,0,0)] # BGR sequence
+label_colours = [(35,142,107),(70,70,70),(128,64,128),(142,0,0),(0,0,0)] # BGR sequence, # 0=vegetarian, 1=building, 2=road 3=vehicle, 4=other
 TYPE = args.type
 CLASS = args.classes
 K = args.K
@@ -375,18 +375,6 @@ def energy_fusion(x, y, z, p):
     print("refine finished")
     return [r_new, g_new, b_new]
 
-# 写点云到obj
-def writePointCloud(x, y, z, r_new, g_new, b_new, path):
-    point = np.array([x, y, z]).transpose()
-    POINT_N = point.shape[0]
-
-    file3 = open(path, 'a')
-    for i in range(POINT_N):
-        file3.write(
-            'v ' + str(x[i]) + ' ' + str(y[i]) + ' ' + str(z[i]) + ' ' + str(r_new[i]) + ' ' + str(g_new[i]) + ' ' + str(b_new[i]) + '\n')
-    file3.close()
-
-
 ###################### main ############################
 
 # 主函数，通过循环分批读取稠密点云，避免内存爆炸
@@ -403,19 +391,19 @@ for ii in range(1):
 
     # refine start
     if TYPE == 3:
-        [r_new,g_new,b_new] = energy_fusion(x, y, z, p)
+        p_new = energy_fusion(x, y, z, p)
     else:
-        [r_new,g_new,b_new] = knn_fusion(x, y, z, p)
+        p_new = knn_fusion(x, y, z, p)
 
     # write Point Cloud
     if TYPE == 0:
-        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_baseline.obj")
+        writePointCloud(x, y, z, p_new, path + "semantic/scene_dense_baseline.obj")
     elif TYPE == 1:
-        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_simple_k=" + str(K) + "batch_size=" + str(batch) +".obj")
+        writePointCloud(x, y, z, p_new, path + "semantic/scene_dense_simple_k=" + str(K) + "batch_size=" + str(batch) +".obj")
     elif TYPE == 2:
-        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_softmax_k=" + str(K) + "batch_size=" + str(batch) +".obj")
+        writePointCloud(x, y, z, p_new, path + "semantic/scene_dense_softmax_k=" + str(K) + "batch_size=" + str(batch) +".obj")
     else:
-        writePointCloud(x, y, z, r_new, g_new, b_new, path + "semantic/scene_dense_graph_k=" + str(K) + "batch_size=" + str(batch) + ".obj")
+        writePointCloud(x, y, z, p_new, path + "semantic/scene_dense_graph_k=" + str(K) + "batch_size=" + str(batch) + ".obj")
 
     logging.info("write finished")
     print("write finished")

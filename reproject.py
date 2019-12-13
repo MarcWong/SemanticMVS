@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import argparse
 import os
+from util.util import bgr2label
 
 ###################### params ############################
 parser = argparse.ArgumentParser()
@@ -15,7 +16,8 @@ obj_path=args.obj_path
 TYPE = args.type
 batch = args.batch_size
 resolution = 2
-label_colours = [(0,255,0),(0,0,255),(255,0,0),(0,255,255),(0,0,0)] # BGR sequence
+label_colours = [(35,142,107),(70,70,70),(128,64,128),(142,0,0),(0,0,0)] # BGR sequence, # 0=vegetarian, 1=building, 2=road 3=vehicle, 4=other
+# label_colours = [(0,255,0),(0,0,255),(255,0,0),(0,255,255),(0,0,0)] # BGR sequence
 
 # path="/data1/Dataset/knn/"
 # path="/data1/Dataset/pku/library/"
@@ -82,13 +84,6 @@ if TYPE == 0:
 
 ###################### functions ############################
 
-def bgr2label(bgr_array):
-    label = -1
-    for i in range(len(label_colours)):
-        if label_colours[i] == bgr_array:
-            label = i
-            break
-    return label
 
 # 从txt读二三维匹配点信息
 def readTxt(ii, readOBJ, file2):
