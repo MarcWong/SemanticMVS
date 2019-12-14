@@ -262,12 +262,11 @@ def knn_fusion(x, y, z, p):
             if K > 1:
                 _, index = tree.query(point[i], k=K)
                 for j in index:
-                    for m in range(len(root)):
-                        root[m] += p[j][m]
                     # use the e distance
                     distance = calcDistance(point[i], point[j])
                     if (distance > 1):
-                        root += p[j] / (distance * distance)
+                        for m in range(len(root)):
+                            root[m] += p[j][m] / (distance * distance)
 
         label = np.argwhere(root == np.amax(root)).flatten().tolist()
         if len(label) == 1:
