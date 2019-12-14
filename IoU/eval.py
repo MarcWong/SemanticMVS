@@ -51,8 +51,8 @@ def main():
 
     pred_list = []
     gt_list = []
-    # for root, _, files in os.walk("1/reproj"):
-    for root, _, files in os.walk("1/pred"):
+    for root, _, files in os.walk("1/reproj"):
+    # for root, _, files in os.walk("1/pred"):
     # root 表示当前正在访问的文件夹路径
     # dirs 表示该文件夹下的子目录名list
     # files 表示该文件夹下的文件list

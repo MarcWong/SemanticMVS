@@ -34,9 +34,9 @@ logName=""
 if TYPE == 0:
     logName = "{}baseline_resolution={}.txt".format(path, resolution)
 elif TYPE == 1:
-    logName = "{}simpleknn_resolution={}_k={}.txt".format(path, resolution, K)
+    logName = "{}argmax_knn_resolution={}_k={}.txt".format(path, resolution, K)
 elif TYPE == 2:
-    logName = "{}softmaxknn_resolution={}_k={}.txt".format(path, resolution, K)
+    logName = "{}prob_knn_resolution={}_k={}.txt".format(path, resolution, K)
 else:
     logName = "{}energy_resolution={}.txt".format(path, resolution)
 
@@ -251,6 +251,7 @@ def knn_fusion(x, y, z, p):
     r_new = [0] * len(x)
     g_new = [0] * len(x)
     b_new = [0] * len(x)
+    able = [1] * len(x)
 
 
     for i in range(POINT_N):
@@ -281,7 +282,14 @@ def knn_fusion(x, y, z, p):
 
     logging.info("refine finished")
     print("refine finished")
-    return [r_new, g_new, b_new]
+
+    result_xyz = []
+    result_rgb = []
+    for m in range(len(able)):
+        if able[m]:
+            result_xyz.append([x[m] , y[m], z[m]])
+            result_rgb.append([r_new[m], g_new[m], b_new[m]])
+    return result_xyz, result_rgb
 
 def energy_fusion(x, y, z, p):
     point = np.array([x, y, z]).transpose()
@@ -304,6 +312,7 @@ def energy_fusion(x, y, z, p):
     # dsum = 0.05
 
     visit = [0] * len(x)
+    able = [1] * len(x)
 
     r_new = [0] * len(x)
     g_new = [0] * len(x)
@@ -340,6 +349,8 @@ def energy_fusion(x, y, z, p):
                 queue = temp
 
             for j in range(len(all)):
+                if len(all) < 5:
+                    able[all[j]] = 0
                 label = np.argwhere(root == np.amax(root)).flatten().tolist()
                 if len(label) == 1:
                     r_new[all[j]] = label_colours[label[0]][2]
@@ -351,10 +362,16 @@ def energy_fusion(x, y, z, p):
                     g_new[all[j]] = label_colours[l][1]
                     b_new[all[j]] = label_colours[l][0]
 
+    logging.info("refine finished")
     print('refine finished')
-    print("refine finished")
-    return [r_new, g_new, b_new]
 
+    result_xyz = []
+    result_rgb = []
+    for m in range(len(able)):
+        if able[m]:
+            result_xyz.append([x[m] , y[m], z[m]])
+            result_rgb.append([r_new[m], g_new[m], b_new[m]])
+    return result_xyz, result_rgb
 ###################### main ############################
 
 # 主函数，通过循环分批读取稠密点云，避免内存爆炸
@@ -371,20 +388,19 @@ for ii in range(1):
 
     # refine start
     if TYPE == 3:
-        p_new = energy_fusion(x, y, z, p)
-        print(len(p_new[0]), len(p[0]))
+        points_new, p_new = energy_fusion(x, y, z, p)
     else:
-        p_new = knn_fusion(x, y, z, p)
+        points_new, p_new = knn_fusion(x, y, z, p)
 
     # write Point Cloud
     if TYPE == 0:
-        writePointCloud(x, y, z, p_new, path + "semantic/scene_dense_baseline.obj")
+        writePointCloud(points_new, p_new, path + "semantic/scene_dense_baseline.obj")
     elif TYPE == 1:
-        writePointCloud(x, y, z, p_new, path + "semantic/scene_dense_simple_k=" + str(K) + "batch_size=" + str(batch) +".obj")
+        writePointCloud(points_new, p_new, path + "semantic/scene_dense_simple_k=" + str(K) + "batch_size=" + str(batch) +".obj")
     elif TYPE == 2:
-        writePointCloud(x, y, z, p_new, path + "semantic/scene_dense_softmax_k=" + str(K) + "batch_size=" + str(batch) +".obj")
+        writePointCloud(points_new, p_new, path + "semantic/scene_dense_softmax_k=" + str(K) + "batch_size=" + str(batch) +".obj")
     else:
-        writePointCloud(x, y, z, p_new, path + "semantic/scene_dense_graph_k=" + str(K) + "batch_size=" + str(batch) + ".obj")
+        writePointCloud(points_new, p_new, path + "semantic/scene_dense_graph_k=" + str(K) + "batch_size=" + str(batch) + ".obj")
 
     logging.info("write finished")
     print("write finished")
