@@ -16,7 +16,7 @@ parser.add_argument('--batch_size', type=int, default=100, help='divided into n 
 parser.add_argument('--resolution_level', type=int, default=1, help='MVS resolution level')
 args = parser.parse_args()
 
-label_colours = [(35,142,107),(70,70,70),(128,64,128),(142,0,0),(0,0,0)] # BGR sequence, # 0=vegetarian, 1=building, 2=road 3=vehicle, 4=other
+label_colours = [(35,142,107),(70,70,70),(128,64,128),(0,0,142),(0,0,0)] # BGR sequence, # 0=vegetarian, 1=building, 2=road 3=vehicle, 4=other
 TYPE = args.type
 CLASS = args.classes
 K = args.K
@@ -229,7 +229,7 @@ def readTxt(ii, softmax):
 
                 # pt /= nImage
                 p.append(pt)
-                
+
         line = file2.readline()
     logging.info("u: {} ,v: {}".format(u,v))
     print("u: {} ,v: {}".format(u,v))
@@ -255,19 +255,20 @@ def knn_fusion(x, y, z, p):
 
     for i in range(POINT_N):
 
-        pnn = p[i]
+        root = p[i]
 
         if TYPE > 0:
             if K > 1:
                 _, index = tree.query(point[i], k=K)
                 for j in index:
-                    pnn += p[j]
+                    for m in range(len(root)):
+                        root[m] += p[j][m]
                     # use the e distance
                     distance = calcDistance(point[i], point[j])
                     if (distance > 1):
-                        pnn += p[j] / (distance * distance)
+                        root += p[j] / (distance * distance)
 
-        label = np.argwhere(pnn == np.amax(pnn)).flatten().tolist()
+        label = np.argwhere(root == np.amax(root)).flatten().tolist()
         if len(label) == 1:
             r_new[i] = label_colours[label[0]][2]
             g_new[i] = label_colours[label[0]][1]
@@ -292,17 +293,18 @@ def energy_fusion(x, y, z, p):
     logging.info("build tree finished")
     print('build tree finished')
 
-    # dsum = 0
-    # k = int(POINT_N / 1000)
-    # for i in range(POINT_N):
-    #    d, index = tree.query(point[i], k=K)
-    #    for dk in d:
-    #         dsum+=dk
-    # dsum=dsum/POINT_N/10
-    # print(dsum)
-    dsum = 0.02
+    dsum = 0
+    k = int(POINT_N / 1000)
+    for i in range(POINT_N):
+       d, index = tree.query(point[i], k=K)
+       for dk in d:
+            dsum+=dk
+    dsum=dsum/POINT_N/10
+    print(dsum)
+    # dsum = 0.05
 
     visit = [0] * len(x)
+
     r_new = [0] * len(x)
     g_new = [0] * len(x)
     b_new = [0] * len(x)
@@ -313,12 +315,7 @@ def energy_fusion(x, y, z, p):
         if (visit[i] == 0):
             visit[i] = 1
             root = p[i]
-            # rootr = r[i]
-            # rootg = g[i]
-            # rootb = b[i]
-            # rr = bool(root[0])
-            # gg = bool(root[1])
-            # bb = bool(root[2])
+
             queue = []
             all = []
             queue.append(point[i])
@@ -331,13 +328,11 @@ def energy_fusion(x, y, z, p):
                     ct = 0
                     for k in index:
                         if (dk[ct] < dsum) and (ct > 0):
-                            root += p[k]
-                            # rr += bool(r[k])
-                            # gg += bool(g[k])
-                            # bb += bool(b[k])
+                            for m in range(len(root)):
+                                root[m] += p[k][m]
+
                             if (visit[k] == 0):
                                 if p[k][0] == p[i][0] and p[k][1] == p[i][1] and p[k][2] == p[i][2]:
-                                # if ((r[k] == rootr) and (g[k] == rootg) and (b[k] == rootb)):
                                     temp.append(point[k])
                                     all.append(k)
                                     visit[k] = 1
@@ -345,7 +340,6 @@ def energy_fusion(x, y, z, p):
                 queue = temp
 
             for j in range(len(all)):
-                # flag = 0
                 label = np.argwhere(root == np.amax(root)).flatten().tolist()
                 if len(label) == 1:
                     r_new[all[j]] = label_colours[label[0]][2]
@@ -356,20 +350,6 @@ def energy_fusion(x, y, z, p):
                     r_new[all[j]] = label_colours[l][2]
                     g_new[all[j]] = label_colours[l][1]
                     b_new[all[j]] = label_colours[l][0]
-                # if (rr > gg) and (rr > bb):
-                #     r_new[all[j]] = 255
-                #     flag = 1
-                # if (gg > rr) and (gg > bb):
-                #     g_new[all[j]] = 255
-                #     flag = 1
-                # if (bb > gg) and (bb > rr):
-                #     b_new[all[j]] = 255
-                #     flag = 1
-                # if (flag == 0):
-                #     r_new[all[j]] = rootr
-                #     g_new[all[j]] = rootg
-                #     b_new[all[j]] = rootb
-                #     flag = 1
 
     print('refine finished')
     print("refine finished")
@@ -392,6 +372,7 @@ for ii in range(1):
     # refine start
     if TYPE == 3:
         p_new = energy_fusion(x, y, z, p)
+        print(len(p_new[0]), len(p[0]))
     else:
         p_new = knn_fusion(x, y, z, p)
 
