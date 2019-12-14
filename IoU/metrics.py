@@ -6,7 +6,7 @@ def plot_confusion_matrix(cm, labels_name, title):
     # print(cm)
 
     plt.figure(figsize=(12,9))
-    plt.imshow(cm, cmap='Blues', aspect='auto', vmin=0, vmax=1, extent=[-0.5,3.5,3,0])    # 在特定的窗口上显示图像
+    plt.imshow(cm, cmap='Blues', aspect='auto', vmin=0, vmax=1)    # 在特定的窗口上显示图像
     plt.title(title)    # 图像标题
     plt.colorbar()
     num_local = np.array(range(len(labels_name)))
@@ -27,7 +27,7 @@ class Evaluator(object):
         # plt.show()
 
     def Pixel_Accuracy(self):
-        # print(self.confusion_matrix[1:,1:])
+        np.save('seg.npy', self.confusion_matrix[1:,1:])
         self.Save_Matrix()
         Acc = np.diag(self.confusion_matrix[1:,1:]).sum() / self.confusion_matrix[1:,1:].sum()
         # Acc = np.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum()
