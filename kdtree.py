@@ -13,9 +13,11 @@ parser.add_argument('--type', type=int, default=0, help='algorithms, 0 for basel
 parser.add_argument('--classes', type=int, default=5, help='semantic classes')
 parser.add_argument('--K', type=int, default=8, help='nearest neighbors')
 parser.add_argument('--batch_size', type=int, default=100, help='divided into n batchs')
+parser.add_argument('--obj_path', type=str, default="", help='semantic point cloud path')
 parser.add_argument('--resolution_level', type=int, default=1, help='MVS resolution level')
 args = parser.parse_args()
 
+obj_path = args.obj_path
 label_colours = [(35,142,107),(70,70,70),(128,64,128),(0,0,142),(0,0,0)] # BGR sequence, # 0=vegetarian, 1=building, 2=road 3=vehicle, 4=other
 TYPE = args.type
 CLASS = args.classes
@@ -137,10 +139,16 @@ while a < 288:
 
 # 从ply读点云
 def readPointCloud(ii):
-    file1 = open(path + "semantic/model_dense.ply")
 
-    for _ in range(13):
-        line = file1.readline()
+    filePath = path + obj_path
+    if os.path.exists(filePath):
+        file1 = open(filePath)
+    else:
+        print('no such file: {}'.format(filePath))
+        return
+
+    # for _ in range(13):
+    #     line = file1.readline()
 
     line = file1.readline()
     x = []
@@ -154,10 +162,10 @@ def readPointCloud(ii):
             dt = line.split()
 
             # run dense
-            x.append(float(dt[0]))
-            y.append(float(dt[1]))
-            z.append(float(dt[2]))
-            p.append([int(dt[3]) / 255., int(dt[4]) / 255., int(dt[5]) / 255.])
+            x.append(float(dt[1]))
+            y.append(float(dt[2]))
+            z.append(float(dt[3]))
+            p.append([float(dt[4]) / 255., float(dt[5]) / 255., float(dt[6]) / 255.])
 
         line = file1.readline()
         ct += 1
@@ -300,15 +308,15 @@ def energy_fusion(x, y, z, p):
     logging.info("build tree finished")
     print('build tree finished')
 
-    dsum = 0
-    k = int(POINT_N / 1000)
-    for i in range(POINT_N):
-       d, index = tree.query(point[i], k=K)
-       for dk in d:
-            dsum+=dk
-    dsum=dsum/POINT_N/10
-    print(dsum)
-    # dsum = 0.05
+    # dsum = 0
+    # k = int(POINT_N / 1000)
+    # for i in range(POINT_N):
+    #    d, index = tree.query(point[i], k=K)
+    #    for dk in d:
+    #         dsum+=dk
+    # dsum=dsum/POINT_N/10
+    # print(dsum)
+    dsum = 0.05
 
     visit = [0] * len(x)
     able = [1] * len(x)
@@ -340,7 +348,8 @@ def energy_fusion(x, y, z, p):
                                 root[m] += p[k][m]
 
                             if (visit[k] == 0):
-                                if np.argmax(p[k]) == np.argmax(p[i]):
+                                if p[k][0] == p[i][0] and p[k][1] == p[i][1] and p[k][2] == p[i][2]:
+                                # if np.argmax(p[k]) == np.argmax(p[i]):
                                     temp.append(point[k])
                                     all.append(k)
                                     visit[k] = 1
@@ -383,14 +392,14 @@ for ii in range(1):
     # read probability and 2-3D relation
     if TYPE < 2:
         [x, y, z, p] = readTxt(ii, False)
-    else:
-        [x, y, z, p] = readTxt(ii, True)
-
-    # refine start
-    if TYPE == 3:
-        points_new, p_new = energy_fusion(x, y, z, p)
-    else:
         points_new, p_new = knn_fusion(x, y, z, p)
+    elif TYPE == 2:
+        [x, y, z, p] = readTxt(ii, True)
+        points_new, p_new = knn_fusion(x, y, z, p)
+    elif TYPE == 3:
+        [x, y, z, p] = readPointCloud(ii)
+        points_new, p_new = energy_fusion(x, y, z, p)
+
 
     # write Point Cloud
     if TYPE == 0:
