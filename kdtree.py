@@ -340,7 +340,7 @@ def energy_fusion(x, y, z, p):
                                 root[m] += p[k][m]
 
                             if (visit[k] == 0):
-                                if p[k][0] == p[i][0] and p[k][1] == p[i][1] and p[k][2] == p[i][2]:
+                                if np.argmax(p[k]) == np.argmax(p[i]):
                                     temp.append(point[k])
                                     all.append(k)
                                     visit[k] = 1
@@ -348,8 +348,8 @@ def energy_fusion(x, y, z, p):
                 queue = temp
 
             for j in range(len(all)):
-                if len(all) < 5:
-                    able[all[j]] = 0
+                # if len(all) < 3:
+                #     able[all[j]] = 0
                 label = np.argwhere(root == np.amax(root)).flatten().tolist()
                 if len(label) == 1:
                     r_new[all[j]] = label_colours[label[0]][2]
@@ -366,6 +366,7 @@ def energy_fusion(x, y, z, p):
 
     result_xyz = []
     result_rgb = []
+    print('able:', len(able))
     for m in range(len(able)):
         if able[m]:
             result_xyz.append([x[m] , y[m], z[m]])
