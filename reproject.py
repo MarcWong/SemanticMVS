@@ -3,12 +3,12 @@ import cv2
 import numpy as np
 import argparse
 import os
-from util.util import bgr2label
+from util.util import rgb2label
 
 ###################### params ############################
 parser = argparse.ArgumentParser()
 parser.add_argument('--type', type=int, default=0, help='algorithms, 0 for baseline, 1 for simple knn, 2 for softmax knn.')
-parser.add_argument('--batch_size', type=int, default=100, help='divided into n batchs')
+parser.add_argument('--batch_size', type=int, default=100, help='divided into n batchs, match to kdtree')
 parser.add_argument('--obj_path', type=str, default="", help='semantic point cloud path')
 args = parser.parse_args()
 
@@ -121,7 +121,7 @@ def readTxt(ii, readOBJ, file2):
                     line2 = file2.readline()
                     dt2 = line2.split()
                     if len(dt2) == 7 and pp == (dt2[1],dt2[2],dt2[3]):
-                        l = bgr2label((int(dt2[6]),int(dt2[5]),int(dt2[4])))
+                        l = rgb2label([int(dt2[4]), int(dt2[5]), int(dt2[6])])
                     else:
                         continue
 

@@ -3,7 +3,6 @@ import numpy as np
 
 def plot_confusion_matrix(cm, labels_name, title):
     cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]    # 归一化
-    # print(cm)
 
     plt.figure(figsize=(12,9))
     plt.imshow(cm, cmap='Blues', aspect='auto', vmin=0, vmax=1)    # 在特定的窗口上显示图像
@@ -21,7 +20,7 @@ class Evaluator(object):
         self.num_class = num_class
         self.confusion_matrix = np.zeros((self.num_class,)*2)
     def Save_Matrix(self):
-        plot_confusion_matrix(self.confusion_matrix[1:,1:], ["building", "vegetarian", "car", "road"], "Confusion Matrix")
+        plot_confusion_matrix(self.confusion_matrix[1:,1:], ["building", "vegetarian", "vehicle", "road"], "Confusion Matrix")
         plt.savefig('confusion_matrix.png', format='png')
 
         # plt.show()

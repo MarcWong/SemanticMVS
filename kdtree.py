@@ -5,7 +5,7 @@ import argparse
 import logging
 import os
 import operator
-from util.util import calcDistance, writePointCloud
+from util.util import calcDistance, writePointCloud, rgb2label
 
 ###################### params ############################
 parser = argparse.ArgumentParser()
@@ -13,12 +13,12 @@ parser.add_argument('--type', type=int, default=0, help='algorithms, 0 for basel
 parser.add_argument('--classes', type=int, default=5, help='semantic classes')
 parser.add_argument('--K', type=int, default=8, help='nearest neighbors')
 parser.add_argument('--batch_size', type=int, default=100, help='divided into n batchs')
-parser.add_argument('--obj_path', type=str, default="", help='semantic point cloud path')
+parser.add_argument('--obj_path', type=str, default="semantic/result/prob/rate/scene_dense_softmax_k=15batch_size=1.obj", help='semantic point cloud path')
 parser.add_argument('--resolution_level', type=int, default=1, help='MVS resolution level')
 args = parser.parse_args()
 
 obj_path = args.obj_path
-label_colours = [(35,142,107),(70,70,70),(128,64,128),(0,0,142),(0,0,0)] # BGR sequence, # 0=vegetarian, 1=building, 2=road 3=vehicle, 4=other
+label_colours = [(107,142,35),(70,70,70),(128,64,128),(0,0,142),(0,0,0)] # BGR sequence, # 0=vegetarian, 1=building, 2=road 3=vehicle, 4=other
 TYPE = args.type
 CLASS = args.classes
 K = args.K
@@ -165,7 +165,7 @@ def readPointCloud(ii):
             x.append(float(dt[1]))
             y.append(float(dt[2]))
             z.append(float(dt[3]))
-            p.append([float(dt[4]) / 255., float(dt[5]) / 255., float(dt[6]) / 255.])
+            p.append([int(dt[4]), int(dt[5]), int(dt[6])])
 
         line = file1.readline()
         ct += 1
@@ -298,6 +298,92 @@ def knn_fusion(x, y, z, p):
             result_rgb.append([r_new[m], g_new[m], b_new[m]])
     return result_xyz, result_rgb
 
+# read from output.txt
+# def energy_fusion(x, y, z, p):
+#     point = np.array([x, y, z]).transpose()
+#     POINT_N = point.shape[0]
+#     logging.info("points: {}".format(POINT_N))
+#     print("points: {}".format(POINT_N))
+
+#     tree = spatial.KDTree(point)
+#     logging.info("build tree finished")
+#     print('build tree finished')
+
+#     # dsum = 0
+#     # k = int(POINT_N / 1000)
+#     # for i in range(POINT_N):
+#     #    d, index = tree.query(point[i], k=K)
+#     #    for dk in d:
+#     #         dsum+=dk
+#     # dsum=dsum/POINT_N/10
+#     # print(dsum)
+#     dsum = 0.05
+
+#     visit = [0] * len(x)
+#     able = [1] * len(x)
+
+#     r_new = [0] * len(x)
+#     g_new = [0] * len(x)
+#     b_new = [0] * len(x)
+
+
+#     for i in range(POINT_N):
+
+#         if (visit[i] == 0):
+#             visit[i] = 1
+#             root = p[i]
+
+#             queue = []
+#             all = []
+#             queue.append(point[i])
+#             all.append(i)
+#             while (len(queue) > 0):
+#                 temp = []
+#                 for j in range(len(queue)):
+#                     d, index = tree.query(queue[j], k=K)
+#                     dk = np.array(d)
+#                     ct = 0
+#                     for k in index:
+#                         if (dk[ct] < dsum) and (ct > 0):
+#                             for m in range(len(root)):
+#                                 root[m] += p[k][m]
+
+#                             if (visit[k] == 0):
+#                                 if np.argmax(p[k]) == np.argmax(p[i]):
+#                                     temp.append(point[k])
+#                                     all.append(k)
+#                                     visit[k] = 1
+#                         ct += 1
+#                 queue = temp
+
+#             for j in range(len(all)):
+#                 # if len(all) < 3:
+#                 #     able[all[j]] = 0
+#                 label = np.argwhere(root == np.amax(root)).flatten().tolist()
+#                 if len(label) == 1:
+#                     r_new[all[j]] = label_colours[label[0]][2]
+#                     g_new[all[j]] = label_colours[label[0]][1]
+#                     b_new[all[j]] = label_colours[label[0]][0]
+#                 else: # 存在多个最大值
+#                     l = np.argmax(p[all[j]])
+#                     r_new[all[j]] = label_colours[l][2]
+#                     g_new[all[j]] = label_colours[l][1]
+#                     b_new[all[j]] = label_colours[l][0]
+
+#     logging.info("refine finished")
+#     print('refine finished')
+
+#     result_xyz = []
+#     result_rgb = []
+#     print('able:', len(able))
+#     for m in range(len(able)):
+#         if able[m]:
+#             result_xyz.append([x[m] , y[m], z[m]])
+#             result_rgb.append([r_new[m], g_new[m], b_new[m]])
+#     return result_xyz, result_rgb
+
+
+# read from obj
 def energy_fusion(x, y, z, p):
     point = np.array([x, y, z]).transpose()
     POINT_N = point.shape[0]
@@ -330,7 +416,10 @@ def energy_fusion(x, y, z, p):
 
         if (visit[i] == 0):
             visit[i] = 1
-            root = p[i]
+            root = [0] * 5
+
+            root_label = rgb2label(p[i])
+            root[root_label] += 1
 
             queue = []
             all = []
@@ -344,12 +433,11 @@ def energy_fusion(x, y, z, p):
                     ct = 0
                     for k in index:
                         if (dk[ct] < dsum) and (ct > 0):
-                            for m in range(len(root)):
-                                root[m] += p[k][m]
+                            k_label = rgb2label(p[k])
+                            root[k_label] += 1
 
                             if (visit[k] == 0):
-                                if p[k][0] == p[i][0] and p[k][1] == p[i][1] and p[k][2] == p[i][2]:
-                                # if np.argmax(p[k]) == np.argmax(p[i]):
+                                if rgb2label(p[k]) == rgb2label(p[i]):
                                     temp.append(point[k])
                                     all.append(k)
                                     visit[k] = 1
