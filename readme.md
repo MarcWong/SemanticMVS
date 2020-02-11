@@ -10,7 +10,7 @@ Semantic modeling is a challenging task that has received widespread attention i
 
 ![pipeline](fig/pipeline.jpg)
 
-![semanticfution](fig/semanticfution.jpg)
+![semanticfusion](fig/semanticfusion.jpg)
 
 
 ## Requirements
