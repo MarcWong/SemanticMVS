@@ -19,3 +19,10 @@ Semantic modeling is a challenging task that has received widespread attention i
 
 pip install -r requirements.txt
 
+## Dataset
+
+Here is a test set of images and its 3D dense vertices as the input.
+
+[output.txt](https://drive.google.com/file/d/1uDi9g9tCDU4UuwJl1cv-7PrJzn_Ctc4C/view?usp=sharing)
+
+[test Images](https://drive.google.com/file/d/1zio2ubkR-yPomp5n8zIvfDYB7S288rb4/view?usp=sharing)
