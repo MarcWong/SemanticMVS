@@ -1,4 +1,4 @@
-# Semantic-point-cloud
+# SemanticMVS
 
 This repository contains the reference code for 3D point semantic post-process based on the following paper: [**Semantic 3D Reconstruction with Learning MVS and 2D Segmentation of Aerial Images**](https://www.mdpi.com/2076-3417/10/4/1275)
 
