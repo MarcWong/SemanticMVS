@@ -26,10 +26,14 @@ class Evaluator(object):
         # plt.show()
 
     def Pixel_Accuracy(self):
-        np.save('seg.npy', self.confusion_matrix[1:,1:])
+        Acc = np.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum()
+        return Acc
+
+
+    def Pixel_Accuracy_5class(self):
+        #np.save('seg.npy', self.confusion_matrix[1:,1:])
         self.Save_Matrix()
         Acc = np.diag(self.confusion_matrix[1:,1:]).sum() / self.confusion_matrix[1:,1:].sum()
-        # Acc = np.diag(self.confusion_matrix).sum() / self.confusion_matrix.sum()
 
         # class Precision, Recall, F1
         n = self.confusion_matrix[1:,1:]

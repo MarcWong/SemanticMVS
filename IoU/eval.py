@@ -6,7 +6,7 @@ import os
 
 def evaluate_single(gt,pred,num_of_class):
     evaluator = Evaluator(num_of_class)
-    # evaluator.reset()
+    evaluator.reset()
     evaluator.add_batch(gt,pred)
 
     Acc = evaluator.Pixel_Accuracy()
@@ -19,7 +19,7 @@ def evaluate_single(gt,pred,num_of_class):
 
 def evaluate_batch(gt_list,pred_list,num_of_class):
     evaluator = Evaluator(num_of_class)
-    # evaluator.reset()
+    evaluator.reset()
     for i in range(len(gt_list)):
         evaluator.add_batch(gt_list[i],pred_list[i])
     Acc = evaluator.Pixel_Accuracy()
@@ -54,21 +54,22 @@ def main():
     pred_list = []
     gt_list = []
     for root, _, files in os.walk("1/reproj"):
-    # for root, _, files in os.walk("1/pred"):
+    #for root, _, files in os.walk("1/pred"):
     # root 表示当前正在访问的文件夹路径
     # dirs 表示该文件夹下的子目录名list
     # files 表示该文件夹下的文件list
         files.sort()
         for f in files:
-            # print("file name:{}".format(f))
+            print("file name:{}".format(f))
             pred_list.append(np.array(Image.open(os.path.join(root,f))))
 
     for root, _, files in os.walk("1/gt"):
         files.sort()
         for f in files:
-            # print("file name:{}".format(f))
+            print("file name:{}".format(f))
             gt_list.append(np.array(Image.open(os.path.join(root,f))))
 
-    print(evaluate_batch(pred_list,gt_list,5))
+
+    print(evaluate_batch(pred_list,gt_list,2))
 
 main()
