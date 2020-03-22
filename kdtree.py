@@ -93,55 +93,51 @@ POINT_N = 0
 #WIDTH = 1920
 #HEIGHT = 1080
 
-
 # TNT-Francis
 #path="/data1/Dataset/Benchmark/tanksandtemples/test/Francis/"
 #fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-Francis.txt")
 #WIDTH = 1920
 #HEIGHT = 1080
 
-
 # TNT-Horse
-path="/data1/Dataset/Benchmark/tanksandtemples/test/Horse/"
-fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-Horse.txt")
-WIDTH = 1920
-HEIGHT = 1080
-
-# TNT-Lighthouse
-# path="/data1/Dataset/Benchmark/tanksandtemples/test/Lighthouse/"
-#fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-Lighthouse.txt")
-#WIDTH = 2048
+#path="/data1/Dataset/Benchmark/tanksandtemples/test/Horse/"
+#fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-Horse.txt")
+#WIDTH = 1920
 #HEIGHT = 1080
 
+# TNT-Lighthouse
+path="/data1/Dataset/Benchmark/tanksandtemples/test/Lighthouse/"
+fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-Lighthouse.txt")
+WIDTH = 2048
+HEIGHT = 1080
 
 # TNT-M60
-# path="/data1/Dataset/Benchmark/tanksandtemples/test/M60/"
+#path="/data1/Dataset/Benchmark/tanksandtemples/test/M60/"
 #fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-M60.txt")
 #WIDTH = 2048
 #HEIGHT = 1080
 
 # TNT-Panther
 # path="/data1/Dataset/Benchmark/tanksandtemples/test/Panther/"
-#fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-Panther.txt")
-#WIDTH = 2048
-#HEIGHT = 1080
+# fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-Panther.txt")
+# WIDTH = 2048
+# HEIGHT = 1080
 
 # TNT-Train
-# path="/data1/Dataset/Benchmark/tanksandtemples/test/Train/"
+#path="/data1/Dataset/Benchmark/tanksandtemples/test/Train/"
 #fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-Train.txt")
 #WIDTH = 1920
 #HEIGHT = 1080
 
 prediction = [0]* (len(fx)+1)
-a = 0
-t = 0
+a = 1
+
+print(len(fx))
 while a < len(fx):
-    filePath = path + "prediction/%05d.npy"%(t)
-    if os.path.exists(filePath):
-        prediction[t] = np.load(filePath)
-        a+=1
-        logging.info("{}loaded".format(filePath))
-    t+=1
+    filePath = path + "prediction/%05d.npy"%(a)
+    prediction[a] = np.load(filePath)
+    a+=1
+    logging.info("{}loaded".format(filePath))
 
 ###################### log system setup ############################
 logName=""
@@ -258,7 +254,7 @@ def readTxt(ii, softmax):
 
 
                 # randomly discard background point
-                if TYPE == 0 or np.argmax(pt) != 0 or np.random.rand() > 0.05:
+                if TYPE == 0 or np.argmax(pt) != 0 or np.random.rand() > 0.95:
                     x.append(float(dt[1]))
                     y.append(float(dt[2]))
                     z.append(float(dt[3]))
