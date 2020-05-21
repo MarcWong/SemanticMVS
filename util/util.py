@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import math
+import re
 label_colours = [[35,142,107],[70,70,70],[128,64,128],[0,0,142],[0,0,0]] # RGB sequence, # 0=vegetarian, 1=building, 2=road 3=vehicle, 4=other
 
 def calcDistance(point1, point2):
@@ -38,6 +39,22 @@ def readfile(filename):
                     fx.append(int(i))
 
     return fx
+
+
+def generateTXT(flogPath, foutPath):
+    
+    flog=open(flogPath)
+    fout=open(foutPath, "w")
+
+    line = flog.readline()
+    while (line):
+        if 'DJI_' in line:
+            a = re.findall(r'DJI_[^c]*.JPG', line)[0][4:8]
+            # print(a)
+            fout.write(a)
+            fout.write(',')
+        line = flog.readline()
+
 
 def draw_figure():
     fig = plt.figure(figsize=(16,12))

@@ -5,7 +5,7 @@ import argparse
 import logging
 import os
 import operator
-from util.util import calcDistance, writePointCloud, rgb2label, readfile
+from util.util import calcDistance, writePointCloud, rgb2label, readfile, generateTXT
 
 ###################### params ############################
 parser = argparse.ArgumentParser()
@@ -37,7 +37,7 @@ POINT_N = 0
 # for a in range(62):
 #     prediction[a] = np.load(path + "prediction/DJI010" + str(22+a) + ".jpg.npy")
 
-# PKU m1
+# PKU M1
 # path="/data1/Dataset/pku/m1_semantic/"
 #fx=readfile("/data1/wy/semantic-point-cloud/data/PKU-M1.txt")
 # WIDTH = 4000 / resolution
@@ -46,13 +46,52 @@ POINT_N = 0
 # a = 0
 # t = 0
 # while a < 288:
-#    filePath = path + "prediction/DJI_0" + str(285+t) + ".npy"
+#    filePath = path + "prediction/DJI_%04d.npy"%(t+285)
 #    if os.path.exists(filePath):
 #        prediction[t] = np.load(filePath)
 #        a+=1
 #        logging.info("{}loaded".format(filePath))
 #    t+=1
 
+
+# PKU N1
+# path="/data1/Dataset/pku/n1/"
+# fx=readfile("/data1/wy/semantic-point-cloud/data/PKU-N1.txt")
+# WIDTH = 4000 / resolution
+# HEIGHT = 3000 / resolution
+# prediction = [0]*999
+# a = 0
+# t = 0
+# while a < 350:
+#    filePath = path + "prediction/DJI_%04d.npy"%(t+1)
+
+#    if os.path.exists(filePath):
+#        prediction[t] = np.load(filePath)
+#        a+=1
+#        logging.info("{}loaded".format(filePath))
+#    t+=1
+
+
+# PKU E44
+# path="/data1/Dataset/pku/e44/"
+# logPath="/data1/Dataset/pku/e44/dense/dense/DensifyPointCloud-2005200355358B5E96.log"
+# outPath="/data1/wy/semantic-point-cloud/data/PKU-E44.txt"
+
+# generateTXT(logPath, outPath)
+# fx=readfile(outPath)
+# WIDTH = 4000 / resolution
+# HEIGHT = 3000 / resolution
+# prediction = [0]*999
+# a = 0
+# t = 0
+# while a < 337:
+#    filePath = path + "prediction/DJI_%04d.npy"%(t)
+
+#    if os.path.exists(filePath):
+#        prediction[t] = np.load(filePath)
+#        a+=1
+#        logging.info("{}loaded".format(filePath))
+#    t+=1
 
 # Contest Tianjin
 # path="/data1/Dataset/Semantic/game/Tianjin_semantic/"
@@ -71,20 +110,142 @@ POINT_N = 0
 #     t+=1
 
 # HU-Hall
-# path="/data1/Dataset/Semantic/dalitang/"
+# path="/data1/Dataset/heda/dalitang/"
 #fx=readfile("/data1/wy/semantic-point-cloud/data/HU-Hall.txt")
 #WIDTH = 4000 / resolution
 #HEIGHT = 3000 / resolution
-#prediction = [0]*195
+#prediction = [0]*999
 #a = 0
 #t = 0
 #while a < 195:
-#   filePath = path + "prediction/DJI_0" + str(369+t) + ".npy"
+#   filePath = path + "prediction/DJI_%04d.npy"%(t)
 #   if os.path.exists(filePath):
 #       prediction[t] = np.load(filePath)
 #       a+=1
 #       logging.info("{}loaded".format(filePath))
 #   t+=1
+
+# HU-Anyuanmen
+# path="/data1/Dataset/heda/anyuanmen/"
+# logPath="/data1/Dataset/heda/anyuanmen/dense/dense/DensifyPointCloud-2005210032278B81C0.log"
+# outPath="/data1/wy/semantic-point-cloud/data/HU-Anyuanmen.txt"
+
+# generateTXT(logPath, outPath)
+# fx=readfile(outPath)
+# WIDTH = 4000 / resolution
+# HEIGHT = 3000 / resolution
+# prediction = [0]*999
+# a = 0
+# t = 0
+# while a < 148:
+#   filePath = path + "prediction/DJI_%04d.npy"%(t)
+#   if os.path.exists(filePath):
+#       prediction[t] = np.load(filePath)
+#       a+=1
+#       logging.info("{}loaded".format(filePath))
+#   t+=1
+
+# HU-Jieyindian
+# path="/data1/Dataset/heda/jieyindian/"
+# logPath="/data1/Dataset/heda/jieyindian/dense/dense/DensifyPointCloud-2005210032278B81C0.log"
+# outPath="/data1/wy/semantic-point-cloud/data/HU-Jieyindian.txt"
+
+# generateTXT(logPath, outPath)
+# fx=readfile(outPath)
+# WIDTH = 4000 / resolution
+# HEIGHT = 3000 / resolution
+# prediction = [0]*999
+# a = 0
+# t = 0
+# while a < 86:
+#   filePath = path + "prediction/DJI_%04d.npy"%(t)
+#   if os.path.exists(filePath):
+#       prediction[t] = np.load(filePath)
+#       a+=1
+#       logging.info("{}loaded".format(filePath))
+#   t+=1
+
+# HU-Longting
+# path="/data1/Dataset/heda/longting/"
+# logPath="/data1/Dataset/heda/longting/dense/dense/DensifyPointCloud-2005210251188B8AE7.log"
+# outPath="/data1/wy/semantic-point-cloud/data/HU-Longting.txt"
+
+# generateTXT(logPath, outPath)
+# fx=readfile(outPath)
+# WIDTH = 4000 / resolution
+# HEIGHT = 3000 / resolution
+# prediction = [0]*999
+# a = 0
+# t = 0
+# while a < 135:
+#   filePath = path + "prediction/DJI_%04d.npy"%(t)
+#   if os.path.exists(filePath):
+#       prediction[t] = np.load(filePath)
+#       a+=1
+#       logging.info("{}loaded".format(filePath))
+#   t+=1
+
+# HU-Library
+# path="/data1/Dataset/heda/library/"
+# logPath="/data1/Dataset/heda/library/dense/dense/DensifyPointCloud-2005210308108BAF5B.log"
+# outPath="/data1/wy/semantic-point-cloud/data/HU-Library.txt"
+
+# generateTXT(logPath, outPath)
+# fx=readfile(outPath)
+# WIDTH = 4000 / resolution
+# HEIGHT = 3000 / resolution
+# prediction = [0]*1000
+# a = 0
+# t = 0
+# while a < 225:
+#   filePath = path + "prediction/DJI_%04d.npy"%(t)
+#   if os.path.exists(filePath):
+#       prediction[t] = np.load(filePath)
+#       a+=1
+#       logging.info("{}loaded".format(filePath))
+#   t+=1
+
+
+# HU-Shizhai
+path="/data1/Dataset/heda/shizhai/"
+logPath="/data1/Dataset/heda/shizhai/dense/dense/DensifyPointCloud-2005211115438BB885.log"
+outPath="/data1/wy/semantic-point-cloud/data/HU-Shizhai.txt"
+
+generateTXT(logPath, outPath)
+fx=readfile(outPath)
+WIDTH = 4000 / resolution
+HEIGHT = 3000 / resolution
+prediction = [0]*1000
+a = 0
+t = 0
+while a < 86:
+  filePath = path + "prediction/DJI_%04d.npy"%(t)
+  if os.path.exists(filePath):
+      prediction[t] = np.load(filePath)
+      a+=1
+      logging.info("{}loaded".format(filePath))
+  t+=1
+
+# nanshao_under_construction
+# path="/data1/Dataset/Henan/nanshao_under_construction/"
+# logPath="/data1/Dataset/Henan/nanshao_under_construction/dense/dense/DensifyPointCloud-2005202136088B6785.log"
+# outPath="/data1/wy/semantic-point-cloud/data/nanshao_under_construction.txt"
+
+# generateTXT(logPath, outPath)
+# fx=readfile(outPath)
+# WIDTH = 4056 / resolution
+# HEIGHT = 3040 / resolution
+# prediction = [0]*999
+# a = 0
+# t = 0
+# while a < 115:
+#    filePath = path + "prediction/DJI_%04d.npy"%(t)
+
+#    if os.path.exists(filePath):
+#        prediction[t] = np.load(filePath)
+#        a+=1
+#        logging.info("{}loaded".format(filePath))
+#    t+=1
 
 
 # TNT-Family
@@ -106,10 +267,10 @@ POINT_N = 0
 #HEIGHT = 1080
 
 # TNT-Lighthouse
-path="/data1/Dataset/Benchmark/tanksandtemples/test/Lighthouse/"
-fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-Lighthouse.txt")
-WIDTH = 2048
-HEIGHT = 1080
+# path="/data1/Dataset/Benchmark/tanksandtemples/test/Lighthouse/"
+# fx=readfile("/data1/wy/semantic-point-cloud/data/TNT-Lighthouse.txt")
+# WIDTH = 2048
+# HEIGHT = 1080
 
 # TNT-M60
 #path="/data1/Dataset/Benchmark/tanksandtemples/test/M60/"
@@ -129,15 +290,16 @@ HEIGHT = 1080
 #WIDTH = 1920
 #HEIGHT = 1080
 
-prediction = [0]* (len(fx)+1)
-a = 1
+# prediction = [0]* (len(fx)+1)
+# a = 1
 
-print(len(fx))
-while a < len(fx):
-    filePath = path + "prediction/%05d.npy"%(a)
-    prediction[a] = np.load(filePath)
-    a+=1
-    logging.info("{}loaded".format(filePath))
+# print(len(fx))
+# while a < len(fx):
+#     filePath = path + "prediction/%05d.npy"%(a)
+#     prediction[a] = np.load(filePath)
+#     a+=1
+#     logging.info("{}loaded".format(filePath))
+
 
 ###################### log system setup ############################
 logName=""
@@ -153,7 +315,6 @@ else:
 logging.basicConfig(filename=logName, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logging.info("Algorithm begin: path={}, logName={}".format(path, logName,))
 print("Algorithm begin: path={}, logName={}".format(path, logName))
-
 
 ###################### functions ############################
 
